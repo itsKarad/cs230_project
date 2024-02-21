@@ -12,18 +12,27 @@ amqp.connect('amqp://localhost', function(error0, connection) {
             throw error1;
         }
 
-        var queue = 'hello';
+        var queue = 'task_queue';
 
+        // This makes sure the queue is declared before attempting to consume from it
         channel.assertQueue(queue, {
-            durable: false
+            durable: true
         });
 
-        console.log(" [*] Waiting for messages in %s. To exit press CTRL+C", queue);
+        channel.prefetch(1);
 
         channel.consume(queue, function(msg) {
-            console.log(" [x] Received %s", msg.content.toString());
+        let task = JSON.parse(msg.content.toString())
+
+        console.log(" [x] Received %s",task.name);
+        setTimeout(function() {
+            console.log(" [x] Done");
+            channel.ack(msg);
+        }, task.timeReqd * 1000);
         }, {
-            noAck: true
+        // automatic acknowledgment mode,
+        // see ../confirms.html for details
+            noAck: false
         });
     });
 });

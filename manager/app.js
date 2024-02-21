@@ -1,6 +1,37 @@
 const express = require("express");
 const app = express();
-
+let orders = [
+    {
+        id: "1",
+        name: "Prepare Sauce",
+        priority: 3,
+        timeReqd: 5
+    },
+    {
+        id: "2",
+        name: "Prepare Toppings",
+        priority: 2,
+        timeReqd: 5
+    },
+    {
+        id: "3",
+        name: "Bake Pizza",
+        priority: 1,
+        timeReqd: 10
+    },
+    {
+        id: "4",
+        name: "Pack Pizza for delivery",
+        priority: 5,
+        timeReqd: 1
+    },
+    {
+        id: "5",
+        name: "Cut veggies for toppings",
+        priority: 3,
+        timeReqd: 3
+    }
+];
 var amqp = require('amqplib/callback_api');
 
 amqp.connect('amqp://localhost', function(error0, connection) {
@@ -12,15 +43,20 @@ amqp.connect('amqp://localhost', function(error0, connection) {
             throw error1;
         }
 
-        var queue = 'hello';
-        var msg = 'Hello World!';
+        var queue = 'task_queue';
+        var msg = process.argv.slice(2).join(' ') || "Hello World!";
 
         channel.assertQueue(queue, {
-            durable: false
+            durable: true
         });
-        channel.sendToQueue(queue, Buffer.from(msg));
+        for(const order of orders){
+            channel.sendToQueue(queue, Buffer.from(JSON.stringify(order)), {
+                persistent: true
+            });
+        }
+        
 
-        console.log(" [x] Sent %s", msg);
+        console.log(" [x] Sent '%s'", msg);
     });
     setTimeout(function() {
         connection.close();

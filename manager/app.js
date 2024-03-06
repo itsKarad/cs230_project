@@ -1,6 +1,7 @@
 const express = require("express");
 const connectDB = require("./connect-db");
-const seedDB = require("./seed-data");
+const seedMethods = require("./seed-data");
+const pizzas = require("./dependency");
 
 const app = express();
 // let orders = [
@@ -36,8 +37,12 @@ const app = express();
 //     }
 // ];
 var amqp = require('amqplib/callback_api');
+const Ingredient = require("./Ingredient");
 
 connectDB();
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({extended:true}));
 
 const produceTasks = async(orders) => {
     amqp.connect('amqp://localhost', function(error0, connection) {
@@ -75,9 +80,50 @@ app.get("/ping", (req, res) => {
     res.send("OK")
 });
 
+checkIfPresentInInventory = async (ing_name, quantity) => {
+    let ingredient;
+    console.log("Searching for "+ing_name);
+    ingredient = await Ingredient.findOne({name: ing_name});
+    return (ingredient.quantity >= quantity);
+}
+
+checkIfPizzaCanBeMade = async (pizza_name, quantity) => {
+    let pizzaIngredients = pizzas[pizza_name];
+    console.log(pizzaIngredients);
+    if(pizzaIngredients == null){
+        return false;
+    }
+    for(let i in pizzaIngredients){
+        if(!(await checkIfPresentInInventory(pizzaIngredients[i], quantity))){
+            // reduce qty => ADD row LOCK for each ingredient.
+            return false;
+        }
+    }
+    return true;
+}
+
+app.post("/order", async (req, res) => {
+    // "tomato_pizza"
+    // quantity.
+    // order number
+    const {pizza_name, quantity} = req.body;
+    console.log(pizza_name, quantity);
+    if(!(await checkIfPizzaCanBeMade(pizza_name, quantity))){
+        res.status(201).json({
+            result: "Failed, not enough stock;"
+        });
+    }
+    res.status(201).json({
+        result: "Order success"
+    });
+});
+
 app.get("/load", async(req, res) => {
-    let orders = await seedDB();
-    await produceTasks(orders);
+    seedMethods.deleteExistingWorkOrders();
+    let orders = await seedMethods.seedDB();
+    seedMethods.deleteExistingIngredients();
+    let ingredients = await seedMethods.saveIngredients();
+    // await produceTasks(orders);
     res.send("OK")
 });
 

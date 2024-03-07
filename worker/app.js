@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 
 var amqp = require('amqplib/callback_api');
+const FAILURE_PROBABILITY = 0.1;
 
 amqp.connect('amqp://localhost', function(error0, connection) {
     if (error0) {
@@ -25,6 +26,15 @@ amqp.connect('amqp://localhost', function(error0, connection) {
         let task = JSON.parse(msg.content.toString())
 
         console.log(" [x] Received %s",task.name);
+
+        // Simulate worker failure with 10% probability
+        if (Math.random() < FAILURE_PROBABILITY) {
+            console.log(" [x] Worker failed to process the task:", task.name);
+            // Requeue the message
+            channel.reject(msg, true); // true to requeue
+            return;
+        }
+        
         setTimeout(function() {
             console.log(" [x] Done");
             channel.ack(msg);

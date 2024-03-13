@@ -1,6 +1,7 @@
 const Ingredient = require("./models/Ingredient");
 const pizzas = require("./dependency");
 const WorkOrder = require("./models/WorkOrder");
+const { removeIngredient } = require("./modify_database");
 
 checkIfPresentInInventory = async (ing_name, quantity) => {
     let ingredient;
@@ -16,9 +17,11 @@ exports.checkIfPizzaCanBeMade = async (pizza_name, quantity) => {
         return false;
     }
     for(let i in pizzaIngredients){
-        if(!(await checkIfPresentInInventory(pizzaIngredients[i], quantity))){
+        if (!(await checkIfPresentInInventory(pizzaIngredients[i], quantity))) {
             // reduce qty => ADD row LOCK for each ingredient.
             return false;
+        } else {
+            await removeIngredient(pizzaIngredients[i]);
         }
     }
     return true;

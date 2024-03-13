@@ -1,5 +1,28 @@
-const Ingredient = require("./Ingredient");
-const WorkOrder = require("./WorkOrder");
+const Ingredient = require("./models/Ingredient");
+const pizzas = require("./dependency");
+const WorkOrder = require("./models/WorkOrder");
+
+checkIfPresentInInventory = async (ing_name, quantity) => {
+    let ingredient;
+    console.log("Searching for "+ing_name);
+    ingredient = await Ingredient.findOne({name: ing_name});
+    return (ingredient.quantity >= quantity);
+}
+
+exports.checkIfPizzaCanBeMade = async (pizza_name, quantity) => {
+    let pizzaIngredients = pizzas[pizza_name];
+    console.log(pizzaIngredients);
+    if(pizzaIngredients == null){
+        return false;
+    }
+    for(let i in pizzaIngredients){
+        if(!(await checkIfPresentInInventory(pizzaIngredients[i], quantity))){
+            // reduce qty => ADD row LOCK for each ingredient.
+            return false;
+        }
+    }
+    return true;
+}
 
 const createWorkOrder = async(name, qty, priority, timeReqd) => {
     // Create an instance of the MyObject model
@@ -9,7 +32,7 @@ const createWorkOrder = async(name, qty, priority, timeReqd) => {
         priority: priority,
         timeRequired: timeReqd
     });
-  
+
     // // Save the object to the database
     await order.save();
 
@@ -33,7 +56,7 @@ const createIngredient = async(name, qty) => {
         name: name,
         quantity: qty
     });
-  
+
     // // Save the object to the database
     await ingredient.save();
     return ingredient;
@@ -60,30 +83,3 @@ exports.saveIngredients = async() => {
     ingredients.push(await createIngredient("Dough", 100));
     return ingredients;
 }
-
-/*
-
-1. U: Worker: Incorporate priority (1-2). Failure success randomness.
-2. H: Manager: Minimum thresholds for each ingredient. (Calculate it for 3 pizzas of each type)
-3. A: Manager: Dependency array for each type of pizza => Tomatoes, Onions -> hardcode in db -> id. t_id -> tomato pizza -> t_p_id.
-4. A: Manager HTTP POST /OrderPizza -> which pizza. Push Baking, packing tasks into queue.
-5. H: DB lock
-
-0. Introduction
-1. Pipeline between manaager and worker
-2. Failure/success case
-3. Priority based task handling by workers.
-4. Inventory management. DB locks.
-5. Thank you
-
-Tomato Pizza -> 
-
-dep = [
-    "dough"
-    "sauce"
-    "tomato"
-]
-
-
-
-*/

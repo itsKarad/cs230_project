@@ -4,7 +4,7 @@ const app = express();
 var amqp = require('amqplib/callback_api');
 const FAILURE_PROBABILITY = 0.5;
 
-amqp.connect('amqp://localhost', function(error0, connection) {
+amqp.connect('amqp://guest:guest@18.225.234.49', function(error0, connection) {
     if (error0) {
         throw error0;
     }

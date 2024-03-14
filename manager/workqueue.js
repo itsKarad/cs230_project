@@ -13,7 +13,7 @@ function getDoughStock() {
 }
 
 exports.produceTasks = async(orders) => {
-    amqp.connect('amqp://guest:guest@18.225.234.49', function(error0, connection) {
+    amqp.connect('amqp://test:password@18.225.234.49', function(error0, connection) {
         if (error0) {
             throw error0;
         }

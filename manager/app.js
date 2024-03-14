@@ -45,7 +45,7 @@ app.get("/load", async(req, res) => {
 
 
 // Setting up server
-const PORT = process.env.PORT || 8082;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, (req, res) => {
     console.log("Server is online on " + PORT);
 });

@@ -54,7 +54,7 @@ app.get("/ping", (req, res) => {
 
 
 // Setting server
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, (req, res) => {
     console.log("Server is online on " + PORT);
 });

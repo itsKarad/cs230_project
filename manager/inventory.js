@@ -1,13 +1,24 @@
 const Ingredient = require("./models/Ingredient");
 const pizzas = require("./dependency");
 const WorkOrder = require("./models/WorkOrder");
+const workQueueHelpers = require("./workqueue");
 const { removeIngredient } = require("./modify_database");
 
 checkIfPresentInInventory = async (ing_name, quantity) => {
     let ingredient;
-    console.log("Searching for "+ing_name);
-    ingredient = await Ingredient.findOne({name: ing_name});
-    return (ingredient.quantity >= quantity);
+    console.log("Searching for " + ing_name);
+    ingredient = await Ingredient.findOne({ name: ing_name });
+    if (ingredient.quantity <= 3) {
+        // add to queue for restocking.
+        // workQueueHelpers.produceTasks().sendToQueue(
+        //     "restock_queue",
+        //     Buffer.from(JSON.stringify(ingredient)),
+        //     {
+        //         persistent: true,
+        //     }
+        // );
+    }
+    return ingredient.quantity >= quantity;
 }
 
 exports.checkIfPizzaCanBeMade = async (pizza_name, quantity) => {

@@ -2,6 +2,7 @@ const express = require("express");
 const connectDB = require("./connect-db");
 const workQueueHelpers = require("./workqueue");
 const inventoryHelpers = require("./inventory");
+const WorkOrder = require("./models/WorkOrder");
 const app = express();
 
 
@@ -11,6 +12,9 @@ app.use(express.urlencoded({extended:true}));
 
 // Database connection at server start
 connectDB();
+
+// Establish connection to RabbitMQ broker.
+workQueueHelpers.createWorkQueueConnection();
 
 // ROUTES
 
@@ -24,11 +28,23 @@ app.post("/order", async (req, res) => {
     // order number
     const {pizza_name, quantity} = req.body;
     console.log(pizza_name, quantity);
+    // Check if pizza can be made with current inventory stock
     if(!(await inventoryHelpers.checkIfPizzaCanBeMade(pizza_name, quantity))){
         res.status(201).json({
             result: "Failed, not enough stock;"
         });
     }
+    // Create a new work order for this pizza and persist to DB
+    const pizzaOrder = new WorkOrder({
+        name: pizza_name,
+        quantity: quantity,
+        priority: 2,
+        timeRequired: 100 * quantity
+    });
+    await pizzaOrder.save();
+
+    // Dispatch order for making the pizza
+    await workQueueHelpers.produceTasks([pizzaOrder]);
     res.status(201).json({
         result: "Order success"
     });

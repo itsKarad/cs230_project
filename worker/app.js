@@ -37,11 +37,11 @@ amqp.connect(RABBITMQ_LOCAL_URL, function(error0, connection) {
             channel.reject(msg, true); // true to requeue
             return;
         }
-
+        console.log("Worker will require " + task.timeRequired + " seconds to complete task.");
         setTimeout(function() {
             console.log(" [x] Done");
             channel.ack(msg);
-        }, task.timeReqd * 1000);
+        }, task.timeRequired * 1000);
         }, {
         // automatic acknowledgment mode,
         // see ../confirms.html for details

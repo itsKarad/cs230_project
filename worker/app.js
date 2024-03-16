@@ -7,7 +7,7 @@ var amqp = require('amqplib');
 const RABBITMQ_QUEUE_NAME = "task_queue";
 const RABBITMQ_AWS_URL = "amqp://test:password@18.225.234.49";
 const RABBITMQ_LOCAL_URL = "amqp://localhost:5672";
-const FAILURE_PROBABILITY = 0.5;
+const FAILURE_PROBABILITY = 0.1;
 
 // Connect to Database
 connectDB();
@@ -37,17 +37,24 @@ const connectToRabbitMQ = async() => {
                 return;
             }
             const workOrder = await WorkOrder.findById(task._id);
-            workOrder.status = "EXECUTING";
-            await workOrder.save();
-
-            // update task status to EXECUTING
-            console.log("Worker will require " + task.timeRequired + " seconds to complete task.");
-            setTimeout(async() => {
-                workOrder.status = "COMPLETED";
+            // Stale order not present in DB
+            if(workOrder) {
+                workOrder.status = "EXECUTING";
                 await workOrder.save();
-                console.log(" [x] Done");
+
+                // update task status to EXECUTING
+                console.log("Worker will require " + task.timeRequired + " seconds to complete task.");
+                setTimeout(async() => {
+                    workOrder.status = "COMPLETED";
+                    await workOrder.save();
+                    console.log(" [x] Done");
+                    channel.ack(msg);
+                }, task.timeRequired);
+            }
+            else{
+                console.log("Discarding stale work order");
                 channel.ack(msg);
-            }, task.timeRequired * 1000);
+            }
         }, {
             noAck: false
         });

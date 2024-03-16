@@ -70,3 +70,51 @@ exports.spawnEc2Instance = async() => {
         console.log(err);
     }
 }
+
+let spawnedWorkerSearchParams = {
+    Filters: [
+        {
+            Name: `tag:${'Name'}`,
+            Values: ['Spawned Worker']
+        },
+        {
+            Name: `instance-state-name`,
+            Values: ['running']
+        }
+    ]
+};
+let MIN_WORKERS_THRESHOLD = 1;
+
+exports.killEc2Instance = async() => {
+    console.log("There aren't many tasks in queue. Trying to kill workers.")
+    try{
+        const res = await ec2.describeInstances(spawnedWorkerSearchParams).promise();
+        let latestLaunchTime = -1, instanceIdToTerminate = -1;
+        let workerInstances = 0;
+
+        for(let i=0; i<res.Reservations.length; i++){
+            for(let j=0; j<res.Reservations[i].Instances.length; j++){
+                workerInstances++;
+                if(latestLaunchTime < res.Reservations[i].Instances[j].LaunchTime){
+                    latestLaunchTime = res.Reservations[i].Instances[j].LaunchTime;
+                    instanceIdToTerminate = res.Reservations[i].Instances[j].InstanceId;
+                }
+            }
+        }
+        console.log("Found " + workerInstances + " running workers in EC2.");
+        if(workerInstances <= MIN_WORKERS_THRESHOLD){
+            console.log("Cannot kill workers because of min threshold.")
+            return;
+        }
+        if (instanceIdToTerminate !== -1) {
+            const terminateParams = {
+                InstanceIds: [instanceIdToTerminate]
+            };
+            let res = await ec2.terminateInstances(terminateParams).promise();
+            console.log("Successfully terminated instance " + instanceIdToTerminate);
+        }
+    }
+    catch(err){
+        console.log(err);
+    }
+}

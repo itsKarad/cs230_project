@@ -75,12 +75,12 @@ cron.schedule('*/1 * * * *', async() => {
         totalTimeOfQueuedJobs += queuedJobs[idx].timeRequired;
     }
     console.log("Total time required for queued jobs: " + totalTimeOfQueuedJobs);
-    if(totalTimeOfQueuedJobs > MAX_THRESHOLD_FOR_WAITING_TIME){
+    if(totalTimeOfQueuedJobs > MAX_THRESHOLD_FOR_WAITING_TIME) {
         // spawn another worker
         await awsHelpers.spawnEc2Instance();
     }
-    else{
-        console.log("No need to spawn another worker.");
+    else if(totalTimeOfQueuedJobs === 0){
+        await awsHelpers.killEc2Instance();
     }
 });
 

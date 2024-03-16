@@ -15,16 +15,6 @@ const params = {
     InstanceIds: ['i-0c34ee112c8cc678e']
 };
 const BASE_AMI_ID = "ami-0aa97fadf4b5cfa9d";
-// let ec2_launch_commands = [
-//     "sudo apt update",
-//     "sudo apt install docker.io",
-//     "y",
-//     "sudo systemctl start docker",
-//     "sudo systemctl enable docker",
-//     "sudo chmod 666 /var/run/docker.sock",
-//     "docker pull akarad158/cs230_worker:ubuntu_v2",
-//     "docker run -p 8080:8080 -d akarad158/cs230_worker:ubuntu_v2"
-// ];
 
 let startScript = '#!/bin/bash\n' +
     'docker run -p 8080:8080 -d akarad158/cs230_worker:ubuntu_v2'

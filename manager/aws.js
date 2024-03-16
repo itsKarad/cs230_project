@@ -17,7 +17,7 @@ const params = {
 const BASE_AMI_ID = "ami-0aa97fadf4b5cfa9d";
 
 let startScript = '#!/bin/bash\n' +
-    'docker run -p 8080:8080 -d akarad158/cs230_worker:ubuntu_v3'
+    'docker run -p 8080:8080 -d akarad158/cs230_worker:ubuntu_v4'
 
 
 const startScriptBase64Encoded = Buffer.from(startScript).toString('base64');

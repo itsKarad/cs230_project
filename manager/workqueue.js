@@ -1,7 +1,7 @@
 const amqp = require("amqplib");
 const WorkOrder = require("./models/WorkOrder");
 const STOCK_THRESHOLD = 12;
-const RABBITMQ_QUEUE_NAME = "task_queue";
+const RABBITMQ_QUEUE_NAME = "task_queuee";
 const RABBITMQ_AWS_URL = "amqp://test:password@18.224.57.156";
 const RABBITMQ_LOCAL_URL = "amqp://localhost:5672";
 

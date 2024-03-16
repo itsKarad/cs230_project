@@ -2,9 +2,12 @@ const express = require("express");
 const app = express();
 
 var amqp = require('amqplib/callback_api');
+const RABBITMQ_QUEUE_NAME = "task_queue";
+const RABBITMQ_AWS_URL = "amqp://test:password@18.225.234.49";
+const RABBITMQ_LOCAL_URL = "amqp://localhost:5672";
 const FAILURE_PROBABILITY = 0.5;
 
-amqp.connect('amqp://test:password@18.225.234.49', function(error0, connection) {
+amqp.connect(RABBITMQ_LOCAL_URL, function(error0, connection) {
     if (error0) {
         throw error0;
     }
@@ -13,7 +16,7 @@ amqp.connect('amqp://test:password@18.225.234.49', function(error0, connection) 
             throw error1;
         }
 
-        var queue = 'task_queue';
+        var queue = RABBITMQ_QUEUE_NAME;
 
         // This makes sure the queue is declared before attempting to consume from it
         channel.assertQueue(queue, {

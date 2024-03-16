@@ -5,7 +5,7 @@ const WorkOrder = require("./models/WorkOrder");
 
 var amqp = require('amqplib');
 const RABBITMQ_QUEUE_NAME = "task_queue";
-const RABBITMQ_AWS_URL = "amqp://test:password@18.225.234.49";
+const RABBITMQ_AWS_URL = "amqp://test:password@18.224.57.156";
 const RABBITMQ_LOCAL_URL = "amqp://localhost:5672";
 const FAILURE_PROBABILITY = 0.1;
 
@@ -22,7 +22,7 @@ connectDB();
 let connection, channel;
 const connectToRabbitMQ = async () => {
 	try {
-		connection = await amqp.connect(RABBITMQ_LOCAL_URL);
+		connection = await amqp.connect(RABBITMQ_AWS_URL);
 		channel = await connection.createChannel();
 
 		// Ensure the DLX exchange and queue exist

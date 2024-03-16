@@ -4,9 +4,9 @@ const workQueueHelpers = require("./workqueue");
 const inventoryHelpers = require("./inventory");
 const WorkOrder = require("./models/WorkOrder");
 const app = express();
-const cron = require('node-cron');
+const cron = require("node-cron");
 const awsHelpers = require("./aws");
-
+const databaseHelper = require("./modify_database");
 
 // Middleware
 app.use(express.json());
@@ -57,6 +57,9 @@ app.get("/load", async(req, res) => {
     await inventoryHelpers.deleteExistingWorkOrders();
     let orders = await inventoryHelpers.seedDB();
     await inventoryHelpers.deleteExistingIngredients();
+	// empty lock collection
+	await databaseHelper.emptyLockCollection();
+
     let ingredients = await inventoryHelpers.saveIngredients();
     await workQueueHelpers.produceTasks(orders);
     res.send("OK")

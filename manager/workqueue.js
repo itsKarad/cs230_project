@@ -7,20 +7,26 @@ const RABBITMQ_LOCAL_URL = "amqp://localhost:5672";
 
 let connection, channel;
 
-exports.createWorkQueueConnection = async() => {
-    try{
-        connection = await amqp.connect(RABBITMQ_LOCAL_URL);
-        channel = await connection.createChannel();
-        channel.assertQueue(RABBITMQ_QUEUE_NAME, {
-            durable: true
-        });
-        console.log("Connected to RabbitMQ broker!");
-    }
-    catch(err){
-        console.log("RabbitMQ broker connection failed!")
-        console.log(err);
-    }
-}
+const dlxExchange = 'dlx';
+const dlxRoutingKey = 'dlx_routing_key';
+
+exports.createWorkQueueConnection = async () => {
+	try {
+		connection = await amqp.connect(RABBITMQ_LOCAL_URL);
+		channel = await connection.createChannel();
+		channel.assertQueue(RABBITMQ_QUEUE_NAME, {
+			durable: true,
+			arguments: {
+				'x-dead-letter-exchange': dlxExchange,
+				'x-dead-letter-routing-key': dlxRoutingKey,
+			},
+		});
+		console.log('Connected to RabbitMQ broker!');
+	} catch (err) {
+		console.log('RabbitMQ broker connection failed!');
+		console.log(err);
+	}
+};
 
 exports.produceTasks = async(orders) => {
     try{

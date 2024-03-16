@@ -24,8 +24,8 @@ removeIngredient = async (ingredientName) => {
     }
 };
 
-addIngredient = async (ingredientName) => {
-    const ingredient = await Ingredient.findOne({ name: ingredientName });
+const addIngredient = async (ingredientName) => {
+    const ingredient = await readIngredient(ingredientName);
     const taskId = ingredient._id;
     try {
         if (await acquireLock(taskId)) {
@@ -40,6 +40,46 @@ addIngredient = async (ingredientName) => {
         console.log(e);
         await releaseLock(taskId);
     }
+};
+
+const readIngredient = async (ingredientName) => {
+  try {
+    // Attempt to acquire lock
+    const lockAcquired = await acquireLock(ingredientName);
+
+    if (!lockAcquired) {
+      console.log(`Failed to acquire lock for ingredient ${ingredientName}.`);
+      return null;
+    }
+
+    // Read the ingredient from MongoDB
+    const ingredient = await Ingredient.findOne({
+      name: ingredientName,
+    });
+    if (!ingredient) {
+      console.log(`Ingredient ${ingredientName} not found.`);
+      return null;
+    }
+
+    console.log(`Ingredient ${ingredientName} read successfully:`, ingredient);
+
+    return ingredient;
+  } finally {
+    // Always release the lock, even if an error occurs
+    await releaseLock(ingredientName);
+  }
+};
+
+const emptyLockCollection = async () => {
+  const lockCollection = db.collection(LOCK_COLLECTION_NAME);
+
+  try {
+    // Delete all documents from the lock collection
+    await lockCollection.deleteMany({});
+    console.log("Lock collection emptied successfully.");
+  } catch (error) {
+    console.error("Error emptying lock collection:", error);
+  }
 };
 
 acquireLock = async (taskId) => {
@@ -60,4 +100,9 @@ releaseLock = async (taskId) => {
     await lockCollection.updateOne({ _id: taskId }, { $set: { locked: false } });
 };
 
-module.exports = { removeIngredient };
+module.exports = {
+    removeIngredient,
+    addIngredient,
+    readIngredient,
+    emptyLockCollection,
+};

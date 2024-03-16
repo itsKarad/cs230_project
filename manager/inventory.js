@@ -2,12 +2,13 @@ const Ingredient = require("./models/Ingredient");
 const pizzas = require("./dependency");
 const WorkOrder = require("./models/WorkOrder");
 const workQueueHelpers = require("./workqueue");
+const databaseHelper = require("./modify_database");
 const { removeIngredient } = require("./modify_database");
 
 checkIfPresentInInventory = async (ing_name, quantity) => {
     let ingredient;
     console.log("Searching for " + ing_name);
-    ingredient = await Ingredient.findOne({ name: ing_name });
+    ingredient = await databaseHelper.readIngredient(ing_name);
     if (ingredient.quantity <= 3) {
         // add to queue for restocking.
         // workQueueHelpers.produceTasks().sendToQueue(

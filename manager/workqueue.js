@@ -7,6 +7,9 @@ const RABBITMQ_LOCAL_URL = "amqp://localhost:5672";
 
 let connection, channel;
 
+const dlxExchange = 'dlx';
+const dlxRoutingKey = 'dlx_routing_key';
+
 exports.createWorkQueueConnection = async () => {
 	try {
 		connection = await amqp.connect(RABBITMQ_LOCAL_URL);

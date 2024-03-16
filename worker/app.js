@@ -1,12 +1,12 @@
-const express = require('express');
+const express = require("express");
 const app = express();
-const connectDB = require('./connect-db');
-const WorkOrder = require('./models/WorkOrder');
+const connectDB = require("./connect-db");
+const WorkOrder = require("./models/WorkOrder");
 
 var amqp = require('amqplib');
-const RABBITMQ_QUEUE_NAME = 'task_queue';
-const RABBITMQ_AWS_URL = 'amqp://test:password@18.225.234.49';
-const RABBITMQ_LOCAL_URL = 'amqp://localhost:5672';
+const RABBITMQ_QUEUE_NAME = "task_queue";
+const RABBITMQ_AWS_URL = "amqp://test:password@18.225.234.49";
+const RABBITMQ_LOCAL_URL = "amqp://localhost:5672";
 const FAILURE_PROBABILITY = 0.1;
 
 // Define the DLX configuration
@@ -127,12 +127,14 @@ const connectToRabbitMQ = async () => {
 
 connectToRabbitMQ();
 
-app.get('/ping', (req, res) => {
-	res.send('OK');
+app.get("/ping", (req, res) => {
+    res.send("OK")
 });
 
+
+
 // Setting server
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, (req, res) => {
-	console.log('Server is online on ' + PORT);
+    console.log("Server is online on " + PORT);
 });

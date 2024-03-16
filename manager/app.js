@@ -4,6 +4,8 @@ const workQueueHelpers = require("./workqueue");
 const inventoryHelpers = require("./inventory");
 const WorkOrder = require("./models/WorkOrder");
 const app = express();
+const cron = require('node-cron');
+const awsHelpers = require("./aws");
 
 
 // Middleware
@@ -60,6 +62,27 @@ app.get("/load", async(req, res) => {
     res.send("OK")
 });
 
+const MAX_THRESHOLD_FOR_WAITING_TIME = 20*60;// 20 mins
+cron.schedule('*/1 * * * *', async() => {
+    console.log("Checking if another worker application should be spawned")
+    // if total time of tasks which are in QUEUED state is more than 15 minutes, let's spawn up a new worker application
+    let totalTimeOfQueuedJobs = 0;
+    let queuedJobs = await WorkOrder.find({
+        status: "QUEUED"
+    });
+    for(let idx in queuedJobs){
+        console.log(queuedJobs[idx]);
+        totalTimeOfQueuedJobs += queuedJobs[idx].timeRequired;
+    }
+    console.log("Total time required for queued jobs: " + totalTimeOfQueuedJobs);
+    if(totalTimeOfQueuedJobs > MAX_THRESHOLD_FOR_WAITING_TIME){
+        // spawn another worker
+        await awsHelpers.spawnEc2Instance();
+    }
+    else{
+        console.log("No need to spawn another worker.");
+    }
+});
 
 // Setting up server
 const PORT = process.env.PORT || 8080;

@@ -1,39 +1,43 @@
 const express = require('express');
 const app = express();
+const connectDB = require('./connect-db');
+const WorkOrder = require('./models/WorkOrder');
 
-var amqp = require('amqplib/callback_api');
-const FAILURE_PROBABILITY = 0.4;
+var amqp = require('amqplib');
+const RABBITMQ_QUEUE_NAME = 'task_queue';
+const RABBITMQ_AWS_URL = 'amqp://test:password@18.225.234.49';
+const RABBITMQ_LOCAL_URL = 'amqp://localhost:5672';
+const FAILURE_PROBABILITY = 0.1;
 
 // Define the DLX configuration
-const mainQueue = 'task_queue';
 const dlxExchange = 'dlx';
 const dlxQueue = 'dlx_queue';
 const dlxRoutingKey = 'dlx_routing_key';
 const maxRetries = 3; // Maximum number of retries
 
-//amqp://test:password@18.225.234.49
-amqp.connect('amqp://localhost', function (error0, connection) {
-	if (error0) {
-		throw error0;
-	}
-	connection.createChannel(async function (error1, channel) {
-		if (error1) {
-			throw error1;
-		}
+// Connect to Database
+connectDB();
+
+// Connect to RabbitMQ broker
+let connection, channel;
+const connectToRabbitMQ = async () => {
+	try {
+		connection = await amqp.connect(RABBITMQ_LOCAL_URL);
+		channel = await connection.createChannel();
 
 		// Ensure the DLX exchange and queue exist
 		channel.assertExchange(dlxExchange, 'direct', { durable: true });
 		channel.assertQueue(dlxQueue, { durable: true });
 		channel.bindQueue(dlxQueue, dlxExchange, dlxRoutingKey);
 
-		// This makes sure the queue is declared before attempting to consume from it
-		channel.assertQueue(mainQueue, {
+		channel.assertQueue(RABBITMQ_QUEUE_NAME, {
 			durable: true,
 			arguments: {
 				'x-dead-letter-exchange': dlxExchange,
 				'x-dead-letter-routing-key': dlxRoutingKey,
 			},
 		});
+		console.log('Connected to RabbitMQ broker!');
 
 		channel.prefetch(1);
 
@@ -76,32 +80,52 @@ amqp.connect('amqp://localhost', function (error0, connection) {
 		);
 
 		channel.consume(
-			mainQueue,
-			function (msg) {
+			RABBITMQ_QUEUE_NAME,
+			async (msg) => {
 				let task = JSON.parse(msg.content.toString());
 
 				console.log(' [x] Received %s', task.name);
 
 				// Simulate worker failure with 10% probability
 				if (Math.random() < FAILURE_PROBABILITY) {
-					console.log(' [-] Worker failed to process the task:', task.name);
+					console.log(' [x] Worker failed to process the task:', task.name);
 					// Requeue the message
-					// channel.reject(msg, true); // true to requeue
-					channel.nack(msg, false, false);
+					channel.reject(msg, true); // true to requeue
 					return;
 				}
+				const workOrder = await WorkOrder.findById(task._id);
+				// Stale order not present in DB
+				if (workOrder) {
+					workOrder.status = 'EXECUTING';
+					await workOrder.save();
 
-				setTimeout(function () {
-					console.log(' [x] Done', task.name);
+					// update task status to EXECUTING
+					console.log(
+						'Worker will require ' +
+							task.timeRequired +
+							' seconds to complete task.'
+					);
+					setTimeout(async () => {
+						workOrder.status = 'COMPLETED';
+						await workOrder.save();
+						console.log(' [x] Done');
+						channel.ack(msg);
+					}, task.timeRequired);
+				} else {
+					console.log('Discarding stale work order');
 					channel.ack(msg);
-				}, task.timeReqd * 1000);
+				}
 			},
 			{
 				noAck: false,
 			}
 		);
-	});
-});
+	} catch (err) {
+		console.log(err);
+	}
+};
+
+connectToRabbitMQ();
 
 app.get('/ping', (req, res) => {
 	res.send('OK');

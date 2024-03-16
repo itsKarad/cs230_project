@@ -39,7 +39,8 @@ app.post("/order", async (req, res) => {
         name: pizza_name,
         quantity: quantity,
         priority: 2,
-        timeRequired: 100 * quantity
+        timeRequired: 100 * quantity,
+        status: "CREATED"
     });
     await pizzaOrder.save();
 

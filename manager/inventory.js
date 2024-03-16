@@ -44,7 +44,8 @@ const createWorkOrder = async(name, qty, priority, timeReqd) => {
         name: name,
         quantity: qty,
         priority: priority,
-        timeRequired: timeReqd
+        timeRequired: timeReqd,
+        status: "CREATED"
     });
 
     // // Save the object to the database

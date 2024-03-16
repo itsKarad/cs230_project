@@ -1,4 +1,5 @@
 const amqp = require("amqplib");
+const WorkOrder = require("./models/WorkOrder");
 const STOCK_THRESHOLD = 12;
 const RABBITMQ_QUEUE_NAME = "task_queue";
 const RABBITMQ_AWS_URL = "amqp://test:password@18.225.234.49";
@@ -23,7 +24,15 @@ exports.createWorkQueueConnection = async() => {
 
 exports.produceTasks = async(orders) => {
     try{
+
         for(const order of orders){
+            // Change status to QUEUED
+            let dbOrder = await WorkOrder.findById(order._id);
+            if(!dbOrder){
+                return;
+            }
+            dbOrder.status = "QUEUED";
+            await dbOrder.save();
             channel.sendToQueue(RABBITMQ_QUEUE_NAME, Buffer.from(JSON.stringify(order)), {
                 persistent: true
             });

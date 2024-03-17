@@ -66,7 +66,7 @@ app.get("/load", async(req, res) => {
     res.send("OK")
 });
 
-const MAX_THRESHOLD_FOR_WAITING_TIME = 200;// 20 mins
+const MAX_THRESHOLD_FOR_WAITING_TIME = 300;// 20 mins
 cron.schedule('*/1 * * * *', async() => {
     console.log("Checking if another worker application should be spawned")
     // if total time of tasks which are in QUEUED state is more than 15 minutes, let's spawn up a new worker application
@@ -79,7 +79,9 @@ cron.schedule('*/1 * * * *', async() => {
         totalTimeOfQueuedJobs += queuedJobs[idx].timeRequired;
     }
     console.log("Total time required for queued jobs: " + totalTimeOfQueuedJobs);
-    if(totalTimeOfQueuedJobs > MAX_THRESHOLD_FOR_WAITING_TIME) {
+    let numOfWorkerInstances = await awsHelpers.countWorkerEc2Instances();
+    numOfWorkerInstances += 1;
+    if(totalTimeOfQueuedJobs / numOfWorkerInstances > MAX_THRESHOLD_FOR_WAITING_TIME) {
         // spawn another worker
         await awsHelpers.spawnEc2Instance();
     }

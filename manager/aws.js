@@ -76,6 +76,37 @@ const getEc2InstanceIdByName = async(instanceName) => {
     return instanceId;
 }
 
+exports.countWorkerEc2Instances = async() => {
+    let numOfWorkerInstances = 0;
+    try {
+        const params = {
+            Filters: [
+                {
+                    Name: 'tag:Name',
+                    Values: ["Spawned Worker"]
+                },
+                {
+                    Name: 'instance-state-name',
+                    Values: ['running']
+                }
+            ]
+        };
+        const data = await ec2.describeInstances(params).promise();
+        if (data.Reservations.length > 0) {
+            for(let i=0; i<data.Reservations.length; i++){
+                numOfWorkerInstances += data.Reservations[i].Instances.length;
+            }
+            console.log(`Num of Worker EC2 instances = ${numOfWorkerInstances}`);
+        } else {
+            console.log(`No EC2 found with name "Spawned Worker"`);
+        }
+    } catch (err) {
+        console.error('Error occurred while searching for EC2:', err);
+    }
+    return numOfWorkerInstances;
+}
+
+
 exports.getEc2InstancePublicIpAddressByName = async(instanceName) => {
     let publicIpAddress = "NOT_FOUND";
     try {

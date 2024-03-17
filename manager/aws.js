@@ -24,55 +24,87 @@ let startScript = '#!/bin/bash\n' +
 
 const startScriptBase64Encoded = Buffer.from(startScript).toString('base64');
 
-const getAMIIdByName = async() => {
+const getAMIIdByName = async(amiName) => {
     try {
         const params = {
             Filters: [
                 {
                     Name: 'name',
-                    Values: [`*${AMI_NAME}*`]
+                    Values: [`*${amiName}*`]
                 }
             ]
         };
         const data = await ec2.describeImages(params).promise();
         if (data.Images.length > 0) {
             const amiId = data.Images[0].ImageId;
-            console.log(`AMI ID with name "${AMI_NAME}" found: ${amiId}`);
+            console.log(`AMI ID with name "${amiName}" found: ${amiId}`);
         } else {
-            console.log(`No AMI found with name "${AMI_NAME}"`);
+            console.log(`No AMI found with name "${amiName}"`);
         }
     } catch (err) {
         console.error('Error occurred while searching for AMI:', err);
     }
 }
 
-const getEc2InstanceIdByName = async() => {
+const getEc2InstanceIdByName = async(instanceName) => {
     try {
         const params = {
             Filters: [
                 {
                     Name: 'name',
-                    Values: [`*${WORKER_EC2_INSTANCE_NAME}*`]
+                    Values: [`*${instanceName}*`]
+                },
+                {
+                    Name: 'instance-state-name',
+                    Values: ['running']
                 }
             ]
         };
         const data = await ec2.describeInstances(params).promise();
         if (data.Reservations.length > 0) {
             const amiId = data.Reservations[0].Instances[0].InstanceId;
-            console.log(`EC2 instance with name "${WORKER_EC2_INSTANCE_NAME}" found. ID is : ${amiId}`);
+            console.log(`EC2 instance with name "${instanceName}" found. ID is : ${amiId}`);
         } else {
-            console.log(`No EC2 found with name "${WORKER_EC2_INSTANCE_NAME}"`);
+            console.log(`No EC2 found with name "${instanceName}"`);
         }
     } catch (err) {
         console.error('Error occurred while searching for EC2:', err);
     }
 }
 
+exports.getEc2InstancePublicIpAddressByName = async(instanceName) => {
+    let publicIpAddress = "NOT_FOUND";
+    try {
+        const params = {
+            Filters: [
+                {
+                    Name: 'tag:Name',
+                    Values: [`*${instanceName}*`]
+                },
+                {
+                    Name: 'instance-state-name',
+                    Values: ['running']
+                }
+            ]
+        };
+        const data = await ec2.describeInstances(params).promise();
+        if (data.Reservations.length > 0) {
+            publicIpAddress = data.Reservations[0].Instances[0].PublicIpAddress;
+            console.log(`EC2 instance with name "${WORKER_EC2_INSTANCE_NAME}" found. publicIpAddress is : ${publicIpAddress}`);
+        } else {
+            console.log(`No EC2 found with name "${WORKER_EC2_INSTANCE_NAME}"`);
+        }
+    } catch (err) {
+        console.error('Error occurred while searching for EC2:', err);
+    }
+    return publicIpAddress;
+}
+
 exports.spawnEc2Instance = async() => {
     console.log("Spawning another ec2 instance!");
     try {
-        const ec2InstanceId = await getEc2InstanceIdByName();
-        const baseImageId = await getAMIIdByName();
+        const ec2InstanceId = await getEc2InstanceIdByName(WORKER_EC2_INSTANCE_NAME);
+        const baseImageId = await getAMIIdByName(AMI_NAME);
 
         const ec2Data = await ec2.describeInstances({
             InstanceIds: [ec2InstanceId]

@@ -1,18 +1,21 @@
 const amqp = require("amqplib");
 const WorkOrder = require("./models/WorkOrder");
+const awsHelpers = require("./aws");
 const STOCK_THRESHOLD = 12;
 const RABBITMQ_QUEUE_NAME = "task_queue";
-const RABBITMQ_AWS_URL = "amqp://test:password@3.142.252.150";
+const RABBITMQ_AWS_URL = "amqp://test:password@";
 const RABBITMQ_LOCAL_URL = "amqp://localhost:5672";
 
 let connection, channel;
 
 const dlxExchange = 'dlx';
+const RABBITMQ_INSTANCE_NAME = "RabbitMQ";
 const dlxRoutingKey = 'dlx_routing_key';
 
 exports.createWorkQueueConnection = async () => {
 	try {
-		connection = await amqp.connect(RABBITMQ_AWS_URL);
+        let rabbitmqInstancePublicAddress = await awsHelpers.getEc2InstancePublicIpAddressByName(RABBITMQ_INSTANCE_NAME);
+		connection = await amqp.connect(RABBITMQ_AWS_URL + rabbitmqInstancePublicAddress);
 		channel = await connection.createChannel();
 		channel.assertQueue(RABBITMQ_QUEUE_NAME, {
 			durable: true,

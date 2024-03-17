@@ -2,12 +2,14 @@ const express = require("express");
 const app = express();
 const connectDB = require("./connect-db");
 const WorkOrder = require("./models/WorkOrder");
+const awsHelpers = require("./aws");
 
 var amqp = require('amqplib');
 const RABBITMQ_QUEUE_NAME = "task_queue";
-const RABBITMQ_AWS_URL = "amqp://test:password@3.142.252.150";
+const RABBITMQ_AWS_URL = "amqp://test:password@";
 const RABBITMQ_LOCAL_URL = "amqp://localhost:5672";
 const FAILURE_PROBABILITY = 0.1;
+const RABBITMQ_INSTANCE_NAME = "RabbitMQ";
 
 // Define the DLX configuration
 const dlxExchange = 'dlx';
@@ -22,7 +24,8 @@ connectDB();
 let connection, channel;
 const connectToRabbitMQ = async () => {
 	try {
-		connection = await amqp.connect(RABBITMQ_AWS_URL);
+		let rabbitmqInstancePublicAddress = await awsHelpers.getEc2InstancePublicIpAddressByName(RABBITMQ_INSTANCE_NAME);
+		connection = await amqp.connect(RABBITMQ_AWS_URL + rabbitmqInstancePublicAddress);
 		channel = await connection.createChannel();
 
 		// Ensure the DLX exchange and queue exist

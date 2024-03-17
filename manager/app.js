@@ -7,6 +7,7 @@ const app = express();
 const cron = require("node-cron");
 const awsHelpers = require("./aws");
 const databaseHelper = require("./modify_database");
+const RABBITMQ_INSTANCE_NAME = "RabbitMQ";
 
 // Middleware
 app.use(express.json());

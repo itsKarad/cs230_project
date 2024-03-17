@@ -25,18 +25,19 @@ let startScript = '#!/bin/bash\n' +
 const startScriptBase64Encoded = Buffer.from(startScript).toString('base64');
 
 const getAMIIdByName = async(amiName) => {
+    let amiId = "NOT_FOUND";
     try {
         const params = {
             Filters: [
                 {
                     Name: 'name',
-                    Values: [`*${amiName}*`]
+                    Values: [amiName]
                 }
             ]
         };
         const data = await ec2.describeImages(params).promise();
         if (data.Images.length > 0) {
-            const amiId = data.Images[0].ImageId;
+            amiId = data.Images[0].ImageId;
             console.log(`AMI ID with name "${amiName}" found: ${amiId}`);
         } else {
             console.log(`No AMI found with name "${amiName}"`);
@@ -44,6 +45,7 @@ const getAMIIdByName = async(amiName) => {
     } catch (err) {
         console.error('Error occurred while searching for AMI:', err);
     }
+    return amiId;
 }
 
 const getEc2InstanceIdByName = async(instanceName) => {
@@ -51,7 +53,7 @@ const getEc2InstanceIdByName = async(instanceName) => {
         const params = {
             Filters: [
                 {
-                    Name: 'name',
+                    Name: 'tag:Name',
                     Values: [`*${instanceName}*`]
                 },
                 {

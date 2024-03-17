@@ -14,7 +14,7 @@ let ec2 = new AWS.EC2();
 const params = {
     InstanceIds: ['i-0c34ee112c8cc678e']
 };
-const BASE_AMI_ID = "ami-0aa97fadf4b5cfa9d";
+const BASE_AMI_ID = "ami-084ac0155479cb9de";
 
 let startScript = '#!/bin/bash\n' +
     'docker run -p 8080:8080 -d akarad158/cs230_worker:ubuntu_v3'

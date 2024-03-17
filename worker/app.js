@@ -4,7 +4,7 @@ const connectDB = require("./connect-db");
 const WorkOrder = require("./models/WorkOrder");
 
 var amqp = require('amqplib');
-const RABBITMQ_QUEUE_NAME = "task_queuee";
+const RABBITMQ_QUEUE_NAME = "task_queue";
 const RABBITMQ_AWS_URL = "amqp://test:password@18.224.57.156";
 const RABBITMQ_LOCAL_URL = "amqp://localhost:5672";
 const FAILURE_PROBABILITY = 0.1;

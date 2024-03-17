@@ -19,7 +19,7 @@ const AMI_NAME = "base-image";
 let WORKER_EC2_INSTANCE_NAME = "Worker";
 
 let startScript = '#!/bin/bash\n' +
-    'docker run -p 8080:8080 -d akarad158/cs230_worker:ubuntu_v3'
+    'docker run -p 8080:8080 -d akarad158/cs230_worker:prod'
 
 
 const startScriptBase64Encoded = Buffer.from(startScript).toString('base64');

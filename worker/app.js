@@ -110,7 +110,7 @@ const connectToRabbitMQ = async () => {
 						await workOrder.save();
 						console.log(' [x] Done');
 						channel.ack(msg);
-					}, task.timeRequired);
+					}, task.timeRequired * 1000);
 				} else {
 					console.log('Discarding stale work order');
 					channel.ack(msg);

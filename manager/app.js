@@ -65,7 +65,7 @@ app.get("/load", async(req, res) => {
     res.send("OK")
 });
 
-const MAX_THRESHOLD_FOR_WAITING_TIME = 20*60;// 20 mins
+const MAX_THRESHOLD_FOR_WAITING_TIME = 200;// 20 mins
 cron.schedule('*/1 * * * *', async() => {
     console.log("Checking if another worker application should be spawned")
     // if total time of tasks which are in QUEUED state is more than 15 minutes, let's spawn up a new worker application

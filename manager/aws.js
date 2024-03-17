@@ -49,6 +49,7 @@ const getAMIIdByName = async(amiName) => {
 }
 
 const getEc2InstanceIdByName = async(instanceName) => {
+    let instanceId = "NOT_FOUND";
     try {
         const params = {
             Filters: [
@@ -64,14 +65,15 @@ const getEc2InstanceIdByName = async(instanceName) => {
         };
         const data = await ec2.describeInstances(params).promise();
         if (data.Reservations.length > 0) {
-            const amiId = data.Reservations[0].Instances[0].InstanceId;
-            console.log(`EC2 instance with name "${instanceName}" found. ID is : ${amiId}`);
+            instanceId = data.Reservations[0].Instances[0].InstanceId;
+            console.log(`EC2 instance with name "${instanceName}" found. ID is : ${instanceId}`);
         } else {
             console.log(`No EC2 found with name "${instanceName}"`);
         }
     } catch (err) {
         console.error('Error occurred while searching for EC2:', err);
     }
+    return instanceId;
 }
 
 exports.getEc2InstancePublicIpAddressByName = async(instanceName) => {

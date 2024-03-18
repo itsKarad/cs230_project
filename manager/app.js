@@ -40,7 +40,7 @@ app.post("/order", async (req, res) => {
     // Create a new work order for this pizza and persist to DB
     let orders = [];
     for(let i = 0; i < quantity; i++){
-        let order = await inventoryHelpers.createWorkOrder(pizza_name, quantity, 2, 100);
+        let order = await inventoryHelpers.createWorkOrder(pizza_name, 1, 2, 100);
         orders.push(order);
     }
 

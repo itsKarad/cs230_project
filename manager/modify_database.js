@@ -5,12 +5,12 @@ const LOCK_COLLECTION_NAME = "locks";
 
 db = mongoose.connection;
 
-removeIngredient = async (ingredientName) => {
-    const ingredient = await Ingredient.findOne({ name: ingredientName });
+const removeIngredient = async (ingredientName, quantity) => {
+    const ingredient = await readIngredient(ingredientName);
     const taskId = ingredient._id;
     try {
         if (await acquireLock(taskId)) {
-            ingredient.quantity -= 1;
+            ingredient.quantity -= quantity;
             await ingredient.save();
             console.log("Removed ingredient", ingredientName);
             console.log(`${ingredientName} quantity is now ${ingredient.quantity}`);

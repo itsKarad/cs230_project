@@ -33,7 +33,7 @@ exports.checkIfPizzaCanBeMade = async (pizza_name, quantity) => {
             // reduce qty => ADD row LOCK for each ingredient.
             return false;
         } else {
-            await removeIngredient(pizzaIngredients[i]);
+            await removeIngredient(pizzaIngredients[i], quantity);
         }
     }
     return true;
@@ -99,3 +99,5 @@ exports.saveIngredients = async() => {
     ingredients.push(await createIngredient("Dough", 100));
     return ingredients;
 }
+
+module.exports = {createWorkOrder};

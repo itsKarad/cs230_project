@@ -38,14 +38,11 @@ app.post("/order", async (req, res) => {
         });
     }
     // Create a new work order for this pizza and persist to DB
-    const pizzaOrder = new WorkOrder({
-        name: pizza_name,
-        quantity: quantity,
-        priority: 2,
-        timeRequired: 100 * quantity,
-        status: "CREATED"
-    });
-    await pizzaOrder.save();
+    let orders = [];
+    for(let i = 0; i < quantity; i++){
+        let order = await inventoryHelpers.createWorkOrder(pizza_name, 1, 2, 100);
+        orders.push(order);
+    }
 
     // Dispatch order for making the pizza
     await workQueueHelpers.produceTasks([pizzaOrder]);

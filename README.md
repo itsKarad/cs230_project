@@ -1,6 +1,4 @@
-# AWS Setup
-
-# Project setup
+# AWS setup
 
 Start 3 Ubuntu EC2 instances, named:
 

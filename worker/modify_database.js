@@ -6,10 +6,11 @@ const LOCK_COLLECTION_NAME = "locks";
 db = mongoose.connection;
 
 const removeIngredient = async (ingredientName, quantity) => {
-    const ingredient = await readIngredient(ingredientName);
-    const taskId = ingredient._id;
+    const ing = await Ingredient.findOne({ name: ingredientName });
+    const taskId = ing._id;
     try {
         if (await acquireLock(taskId)) {
+            let ingredient = await Ingredient.findOne({ name: ingredientName });
             ingredient.quantity -= quantity;
             const now = new Date();
             const currentHour = now.getHours();
@@ -29,10 +30,11 @@ const removeIngredient = async (ingredientName, quantity) => {
 };
 
 const addIngredient = async (ingredientName, quantity = 1) => {
-    const ingredient = await readIngredient(ingredientName);
-    const taskId = ingredient._id;
+    const ing = await Ingredient.findOne({ name: ingredientName });
+    const taskId = ing._id;
     try {
         if (await acquireLock(taskId)) {
+            let ingredient = await Ingredient.findOne({ name: ingredientName });
             ingredient.quantity += quantity;
             await ingredient.save();
             console.log("Added ingredient", ingredientName);
@@ -47,31 +49,20 @@ const addIngredient = async (ingredientName, quantity = 1) => {
 };
 
 const readIngredient = async (ingredientName) => {
-  try {
+    try {
     // Attempt to acquire lock
-    const lockAcquired = await acquireLock(ingredientName);
-
-    if (!lockAcquired) {
-      console.log(`Failed to acquire lock for ingredient ${ingredientName}.`);
-      return null;
+        if(await acquireLock(ingredientName)){
+            const ingredient = await Ingredient.findOne({ name: ingredientName });
+            await releaseLock(ingredientName);
+            return ingredient;
+        } else {
+            console.log("Failed to acquire lock");
+            return null;
+        }
+    } catch (e) {
+        console.log(e);
+        await releaseLock(ingredientName);
     }
-
-    // Read the ingredient from MongoDB
-    const ingredient = await Ingredient.findOne({
-      name: ingredientName,
-    });
-    if (!ingredient) {
-      console.log(`Ingredient ${ingredientName} not found.`);
-      return null;
-    }
-
-    console.log(`Ingredient ${ingredientName} read successfully:`, ingredient);
-
-    return ingredient;
-  } finally {
-    // Always release the lock, even if an error occurs
-    await releaseLock(ingredientName);
-  }
 };
 
 acquireLock = async (taskId) => {

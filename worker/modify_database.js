@@ -74,18 +74,6 @@ const readIngredient = async (ingredientName) => {
   }
 };
 
-const emptyLockCollection = async () => {
-  const lockCollection = db.collection(LOCK_COLLECTION_NAME);
-
-  try {
-    // Delete all documents from the lock collection
-    await lockCollection.deleteMany({});
-    console.log("Lock collection emptied successfully.");
-  } catch (error) {
-    console.error("Error emptying lock collection:", error);
-  }
-};
-
 acquireLock = async (taskId) => {
     const lockCollection = await db.collection(LOCK_COLLECTION_NAME);
     // Attempt to acquire lock
@@ -107,6 +95,5 @@ releaseLock = async (taskId) => {
 module.exports = {
     removeIngredient,
     addIngredient,
-    readIngredient,
-    emptyLockCollection,
+    readIngredient
 };

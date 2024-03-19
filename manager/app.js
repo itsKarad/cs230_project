@@ -1,6 +1,7 @@
 const express = require("express");
 const connectDB = require("./connect-db");
 const workQueueHelpers = require("./workqueue");
+const WorkOrder = require("./models/WorkOrder");
 const inventoryHelpers = require("./inventory");
 const app = express();
 const cron = require("node-cron");

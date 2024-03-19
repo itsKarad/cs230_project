@@ -28,12 +28,12 @@ const removeIngredient = async (ingredientName, quantity) => {
     }
 };
 
-const addIngredient = async (ingredientName) => {
+const addIngredient = async (ingredientName, quantity = 1) => {
     const ingredient = await readIngredient(ingredientName);
     const taskId = ingredient._id;
     try {
         if (await acquireLock(taskId)) {
-            ingredient.quantity += 1;
+            ingredient.quantity += quantity;
             await ingredient.save();
             console.log("Added ingredient", ingredientName);
             await releaseLock(taskId);

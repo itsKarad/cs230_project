@@ -39,7 +39,7 @@ exports.checkIfPizzaCanBeMade = async (pizza_name, quantity) => {
     return true;
 }
 
-const createWorkOrder = async(name, qty, priority, timeReqd, stockFlag  = false) => {
+exports.createWorkOrder = async(name, qty, priority, timeReqd, stockFlag  = false) => {
     // Create an instance of the MyObject model
     const order = new WorkOrder({
         name: name,
@@ -100,5 +100,3 @@ exports.saveIngredients = async() => {
     ingredients.push(await createIngredient("Dough", 100));
     return ingredients;
 }
-
-module.exports = {createWorkOrder};

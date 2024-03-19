@@ -65,7 +65,7 @@ const readIngredient = async (ingredientName) => {
       return null;
     }
 
-    console.log(`Ingredient ${ingredientName} read successfully:`, ingredient);
+   // console.log(`Ingredient ${ingredientName} read successfully:`, ingredient);
 
     return ingredient;
   } finally {

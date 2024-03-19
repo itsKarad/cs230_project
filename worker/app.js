@@ -101,9 +101,6 @@ const connectToRabbitMQ = async () => {
 				// Stale order not present in DB
 				if (workOrder) {
 					workOrder.status = 'EXECUTING';
-					if (workOrder.stockFlag) {
-						await addIngredient(workOrder.name, workOrder.quantity);
-					}
 					
 					await workOrder.save();
 					
@@ -115,6 +112,9 @@ const connectToRabbitMQ = async () => {
 					);
 					setTimeout(async () => {
 						workOrder.status = 'COMPLETED';
+						if (workOrder.stockFlag) {
+							await addIngredient(workOrder.name, workOrder.quantity);
+						}
 						await workOrder.save();
 						console.log(' [x] Done');
 						channel.ack(msg);

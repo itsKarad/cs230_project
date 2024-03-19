@@ -28,23 +28,25 @@ makeStockOrderBasedOnLastHourUsage = async() => {
     };
     const now = new Date();
     const prevHour = now.getHours() -1;
-    for (const ingredient of Object.keys(resultStock)) {
+    console.log(prevHour, now);
+    for (const ingredient of Object.keys(lastHourUsage)) {
         const ingredientDemand = await databaseHelper.readIngredient(ingredient);
-        resultStock[ingredient] = 0.2 * (ingredientDemand.hourlyUsage ? ingredientDemand.hourlyUsage[prevHour] || 0 : 0);
+        lastHourUsage[ingredient] = 0.2 * (ingredientDemand.hourlyUsage ? ingredientDemand.hourlyUsage[prevHour] || 0 : 0);
     }   
+
+    let workOrders = [];
 
     // Calculate last hour usage of ingredients
     for (let ingredient in lastHourUsage) {
-        if (lastHourUsage.hasOwnProperty(ingredient)) {
-            await inventoryHelpers.createWorkOrder(ingredient, lastHourUsage[ingredient], 4, 15, true);
-        }
+        let wo = await inventoryHelpers.createWorkOrder(ingredient, lastHourUsage[ingredient], 4, 15, true);
+        workOrders.push(wo);
     }
     // for (let ingredient in lastHourUsage) {
     //     if (lastHourUsage.hasOwnProperty(ingredient)) {
     //         await addIngredient(ingredient, lastHourUsage[ingredient]);
     //     }
     //   }
-    return true;
+    await workQueueHelpers.produceTasks(workOrders)
 }
 
 
@@ -66,7 +68,7 @@ const produceTasks = async(orders) => {
 }
 // Database connection at server start
 connectDB();
-
+makeStockOrderBasedOnLastHourUsage();
 workQueueHelpers.createWorkQueueConnection();
 // ROUTES
 

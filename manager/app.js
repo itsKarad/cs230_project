@@ -2,15 +2,10 @@ const express = require("express");
 const connectDB = require("./connect-db");
 const workQueueHelpers = require("./workqueue");
 const inventoryHelpers = require("./inventory");
-const WorkOrder = require("./models/WorkOrder");
 const app = express();
-var amqp = require('amqplib/callback_api');
-const STOCK_THRESHOLD = 12;
 const cron = require("node-cron");
 const awsHelpers = require("./aws");
 const databaseHelper = require("./modify_database");
-const RABBITMQ_INSTANCE_NAME = "RabbitMQ";
-const { addIngredient } = require("./modify_database");
 
 // Middleware
 app.use(express.json());
@@ -52,20 +47,6 @@ makeStockOrderBasedOnLastHourUsage = async() => {
 
 }
 
-const produceTasks = async(orders) => {
-    amqp.connect('amqp://localhost', function(error0, connection) {
-        if (error0) {
-            throw error0;
-        }
-        connection.createChannel(function(error1, channel) {
-            if (error1) {
-                throw error1;
-            }
-        }
-        )
-    }
-    )
-}
 // Database connection at server start
 connectDB();
 workQueueHelpers.createWorkQueueConnection();
@@ -110,29 +91,29 @@ app.get("/load", async(req, res) => {
     res.send("OK")
 });
 
-// const MAX_THRESHOLD_FOR_WAITING_TIME = 300;// 20 mins
-// cron.schedule('*/1 * * * *', async() => {
-//     console.log("Checking if another worker application should be spawned")
-//     // if total time of tasks which are in QUEUED state is more than 15 minutes, let's spawn up a new worker application
-//     let totalTimeOfQueuedJobs = 0;
-//     let queuedJobs = await WorkOrder.find({
-//         status: "QUEUED"
-//     });
-//     for(let idx in queuedJobs){
-//         console.log(queuedJobs[idx]);
-//         totalTimeOfQueuedJobs += queuedJobs[idx].timeRequired;
-//     }
-//     console.log("Total time required for queued jobs: " + totalTimeOfQueuedJobs);
-//     let numOfWorkerInstances = await awsHelpers.countWorkerEc2Instances();
-//     numOfWorkerInstances += 1;
-//     if(totalTimeOfQueuedJobs / numOfWorkerInstances > MAX_THRESHOLD_FOR_WAITING_TIME) {
-//         // spawn another worker
-//         await awsHelpers.spawnEc2Instance();
-//     }
-//     else if(totalTimeOfQueuedJobs === 0){
-//         await awsHelpers.killEc2Instance();
-//     }
-// });
+const MAX_THRESHOLD_FOR_WAITING_TIME = 300;// 20 mins
+cron.schedule('*/1 * * * *', async() => {
+    console.log("Checking if another worker application should be spawned")
+    // if total time of tasks which are in QUEUED state is more than 15 minutes, let's spawn up a new worker application
+    let totalTimeOfQueuedJobs = 0;
+    let queuedJobs = await WorkOrder.find({
+        status: "QUEUED"
+    });
+    for(let idx in queuedJobs){
+        console.log(queuedJobs[idx]);
+        totalTimeOfQueuedJobs += queuedJobs[idx].timeRequired;
+    }
+    console.log("Total time required for queued jobs: " + totalTimeOfQueuedJobs);
+    let numOfWorkerInstances = await awsHelpers.countWorkerEc2Instances();
+    numOfWorkerInstances += 1;
+    if(totalTimeOfQueuedJobs / numOfWorkerInstances > MAX_THRESHOLD_FOR_WAITING_TIME) {
+        // spawn another worker
+        await awsHelpers.spawnEc2Instance();
+    }
+    else if(totalTimeOfQueuedJobs === 0){
+        await awsHelpers.killEc2Instance();
+    }
+});
 
 // Setting up server
 const PORT = process.env.PORT || 8080;

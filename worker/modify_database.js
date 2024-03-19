@@ -65,11 +65,11 @@ const readIngredient = async (ingredientName) => {
     }
 };
 
-acquireLock = async (taskId) => {
+const acquireLock = async (taskId) => {
     const lockCollection = await db.collection(LOCK_COLLECTION_NAME);
     // Attempt to acquire lock
     const result = await lockCollection.updateOne(
-        { _id: taskId, locked: false },
+        { _id: taskId },
         { $set: { locked: true } },
         { upsert: true }
     );
@@ -77,7 +77,7 @@ acquireLock = async (taskId) => {
     return result.modifiedCount > 0 || result.upsertedCount > 0;
 };
 
-releaseLock = async (taskId) => {
+const releaseLock = async (taskId) => {
     const lockCollection = await db.collection(LOCK_COLLECTION_NAME);
     // Release lock
     await lockCollection.updateOne({ _id: taskId }, { $set: { locked: false } });

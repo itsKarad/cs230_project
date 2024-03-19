@@ -11,6 +11,8 @@ const databaseHelper = require("./modify_database");
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 
+const INITIAL_STOCK_QUANTITY = 100;
+
 makeStockOrderBasedOnLastHourUsage = async() => {
     // this function will be called every hour via cron job to update stock
     // Function to make extra stick order based on last hour usage of ingredients
@@ -88,6 +90,8 @@ app.get("/load", async(req, res) => {
 	await databaseHelper.emptyLockCollection();
 
     let ingredients = await inventoryHelpers.saveIngredients();
+    let tasksList = await inventoryHelpers.createWorkOrdersForIngredientStockUp(ingredients, INITIAL_STOCK_QUANTITY);
+    await workQueueHelpers.produceTasks(tasksList);
     res.send("OK")
 });
 

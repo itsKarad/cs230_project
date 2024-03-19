@@ -56,16 +56,14 @@ exports.createWorkOrder = async(name, qty, priority, timeReqd, stockFlag  = fals
     return order;
 }
 
-// exports.seedDB = async() => {
-//     console.log("Saving initial orders to DB");
-//     let orders = [];
-//     orders.push(await createWorkOrder("Prepare Sauce", 5, 3, 5));
-//     orders.push(await createWorkOrder("Prepare Toppings", 5, 3, 5));
-//     orders.push(await createWorkOrder("Bake Pizza", 5, 3, 5));
-//     orders.push(await createWorkOrder("Pack Pizza for delivery", 5, 3, 5));
-//     orders.push(await createWorkOrder("Cut veggies for toppings", 5, 3, 5));
-//     return orders;
-// }
+exports.createWorkOrdersForIngredientStockUp = async(ingredients, quantity) => {
+    console.log("Saving initial orders to DB");
+    let orders = [];
+    for(let i=0; i<ingredients.length; i++){
+        orders.push(await this.createWorkOrder(ingredients[i].name, quantity, 3, 5, true));
+    }
+    return orders;
+}
 
 const createIngredient = async(name, qty) => {
     // Create an instance of the MyObject model
@@ -92,11 +90,11 @@ exports.deleteExistingWorkOrders = async() => {
 exports.saveIngredients = async() => {
     console.log("Saving initial ingredients to DB");
     let ingredients = [];
-    ingredients.push(await createIngredient("Tomato", 100));
-    ingredients.push(await createIngredient("Onions", 100));
-    ingredients.push(await createIngredient("Sauce", 100));
-    ingredients.push(await createIngredient("Cheese", 100));
-    ingredients.push(await createIngredient("BBQ Chicken", 100));
-    ingredients.push(await createIngredient("Dough", 100));
+    ingredients.push(await createIngredient("Tomato", 0));
+    ingredients.push(await createIngredient("Onions", 0));
+    ingredients.push(await createIngredient("Sauce", 0));
+    ingredients.push(await createIngredient("Cheese", 0));
+    ingredients.push(await createIngredient("BBQ Chicken", 0));
+    ingredients.push(await createIngredient("Dough", 0));
     return ingredients;
 }

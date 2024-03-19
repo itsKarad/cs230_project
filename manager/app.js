@@ -1,59 +1,54 @@
 const express = require("express");
 const connectDB = require("./connect-db");
-const seedMethods = require("./seed-data");
-const pizzas = require("./dependency");
-
+const workQueueHelpers = require("./workqueue");
+const inventoryHelpers = require("./inventory");
+const WorkOrder = require("./models/WorkOrder");
 const app = express();
-// let orders = [
-//     {
-//         id: "1",
-//         name: "Prepare Sauce",
-//         priority: 3,
-//         timeReqd: 5
-//     },
-//     {
-//         id: "2",
-//         name: "Prepare Toppings",
-//         priority: 2,
-//         timeReqd: 5
-//     },
-//     {
-//         id: "3",
-//         name: "Bake Pizza",
-//         priority: 1,
-//         timeReqd: 10
-//     },
-//     {
-//         id: "4",
-//         name: "Pack Pizza for delivery",
-//         priority: 5,
-//         timeReqd: 1
-//     },
-//     {
-//         id: "5",
-//         name: "Cut veggies for toppings",
-//         priority: 3,
-//         timeReqd: 3
-//     }
-// ];
 var amqp = require('amqplib/callback_api');
-const Ingredient = require("./Ingredient");
 const STOCK_THRESHOLD = 12;
-connectDB();
+const cron = require("node-cron");
+const awsHelpers = require("./aws");
+const databaseHelper = require("./modify_database");
+const RABBITMQ_INSTANCE_NAME = "RabbitMQ";
+const { addIngredient } = require("./modify_database");
+
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 
-function getSauceStock() {
-    // Assuming a simple variable for sauce stock, replace with your actual logic
-    return 5;
+makeStockOrderBasedOnLastHourUsage = async() => {
+    // Function to calculate last hour usage of ingredients
+    const lastHourUsage = {
+        'Tomato': 0,
+        'Onions': 0,
+        'Sauce': 0,
+        'Cheese': 0,
+        "BBQ Chicken": 0,
+        'Dough': 0
+    };
+    const now = new Date();
+    const prevHour = now.getHours() -1;
+    for (const ingredient of Object.keys(resultStock)) {
+        const ingredientDemand = await databaseHelper.readIngredient(ingredient);
+        resultStock[ingredient] = 0.2 * (ingredientDemand.hourlyUsage ? ingredientDemand.hourlyUsage[prevHour] || 0 : 0);
+    }   
+
+    // Calculate last hour usage of ingredients
+    for (let ingredient in lastHourUsage) {
+        if (lastHourUsage.hasOwnProperty(ingredient)) {
+            await inventoryHelpers.createWorkOrder(ingredient, lastHourUsage[ingredient], 4, 15, true);
+        }
+    }
+    // for (let ingredient in lastHourUsage) {
+    //     if (lastHourUsage.hasOwnProperty(ingredient)) {
+    //         await addIngredient(ingredient, lastHourUsage[ingredient]);
+    //     }
+    //   }
+    return true;
 }
 
-// Mock function to get dough stock
-function getDoughStock() {
-    // Assuming a simple variable for dough stock, replace with your actual logic
-    return 5;
-}
+
+
 const produceTasks = async(orders) => {
     amqp.connect('amqp://localhost', function(error0, connection) {
         if (error0) {
@@ -63,73 +58,21 @@ const produceTasks = async(orders) => {
             if (error1) {
                 throw error1;
             }
-
-            var queue = 'task_queue';
-            var msg = process.argv.slice(2).join(' ') || "Hello World!";
-
-            channel.assertQueue(queue, {
-                durable: true
-            });
-
-            const sauceStock = getSauceStock();
-            const doughStock = getDoughStock();
-
-            if (sauceStock < STOCK_THRESHOLD || doughStock < STOCK_THRESHOLD) {
-                // Add extra dough and sauces to work order
-                // Added low priority 5 for these tasks
-                if (sauceStock < STOCK_THRESHOLD) {
-                    const extraSauceQtn = STOCK_THRESHOLD - sauceStock;
-                    orders.push(createWorkOrder("Prepare Sauce", extraSauceQtn, 5, 5));
-                    console.log(`Added ${extraSauceQtn} extra sauces to the work order.`);
-                }
-                if (doughStock < STOCK_THRESHOLD) {
-                    const extraDoughQtn = STOCK_THRESHOLD - doughStock;
-                    orders.push(createWorkOrder("Prepare Dough", extraDoughQtn, 5, 5));
-                    console.log(`Added ${extraDoughQtn} extra dough to the work order.`);
-                }
-                
-            }
-            for(const order of orders){
-                channel.sendToQueue(queue, Buffer.from(JSON.stringify(order)), {
-                    persistent: true
-                });
-            }
-            
-
-            console.log(" [x] Sent '%s'", msg);
-        });
-        setTimeout(function() {
-            connection.close();
-            // process.exit(0); Commented before server shuts down.
-        }, 500);
-    });
+        
+        }
+        )
+    }
+    )
 }
+// Database connection at server start
+connectDB();
+
+workQueueHelpers.createWorkQueueConnection();
+// ROUTES
 
 app.get("/ping", (req, res) => {
     res.send("OK")
 });
-
-checkIfPresentInInventory = async (ing_name, quantity) => {
-    let ingredient;
-    console.log("Searching for "+ing_name);
-    ingredient = await Ingredient.findOne({name: ing_name});
-    return (ingredient.quantity >= quantity);
-}
-
-checkIfPizzaCanBeMade = async (pizza_name, quantity) => {
-    let pizzaIngredients = pizzas[pizza_name];
-    console.log(pizzaIngredients);
-    if(pizzaIngredients == null){
-        return false;
-    }
-    for(let i in pizzaIngredients){
-        if(!(await checkIfPresentInInventory(pizzaIngredients[i], quantity))){
-            // reduce qty => ADD row LOCK for each ingredient.
-            return false;
-        }
-    }
-    return true;
-}
 
 app.post("/order", async (req, res) => {
     // "tomato_pizza"
@@ -137,28 +80,62 @@ app.post("/order", async (req, res) => {
     // order number
     const {pizza_name, quantity} = req.body;
     console.log(pizza_name, quantity);
-    if(!(await checkIfPizzaCanBeMade(pizza_name, quantity))){
+    // Check if pizza can be made with current inventory stock
+    if(!(await inventoryHelpers.checkIfPizzaCanBeMade(pizza_name, quantity))){
         res.status(201).json({
             result: "Failed, not enough stock;"
         });
     }
+    
+    // Create a new work order for this pizza and persist to DB
+    let orders = [];
+    for(let i = 0; i < quantity; i++){
+        let order = await inventoryHelpers.createWorkOrder(pizza_name, 1, 2, 100);
+        orders.push(order);
+    }
+    // Dispatch order for making the pizza
+    await workQueueHelpers.produceTasks(orders);
     res.status(201).json({
         result: "Order success"
     });
 });
 
 app.get("/load", async(req, res) => {
-    seedMethods.deleteExistingWorkOrders();
-    let orders = await seedMethods.seedDB();
-    seedMethods.deleteExistingIngredients();
-    let ingredients = await seedMethods.saveIngredients();
-    await produceTasks(orders);
+    await inventoryHelpers.deleteExistingWorkOrders();
+    await inventoryHelpers.deleteExistingIngredients();
+	// empty lock collection
+	await databaseHelper.emptyLockCollection();
+
+    let ingredients = await inventoryHelpers.saveIngredients();
     res.send("OK")
 });
 
+// const MAX_THRESHOLD_FOR_WAITING_TIME = 300;// 20 mins
+// cron.schedule('*/1 * * * *', async() => {
+//     console.log("Checking if another worker application should be spawned")
+//     // if total time of tasks which are in QUEUED state is more than 15 minutes, let's spawn up a new worker application
+//     let totalTimeOfQueuedJobs = 0;
+//     let queuedJobs = await WorkOrder.find({
+//         status: "QUEUED"
+//     });
+//     for(let idx in queuedJobs){
+//         console.log(queuedJobs[idx]);
+//         totalTimeOfQueuedJobs += queuedJobs[idx].timeRequired;
+//     }
+//     console.log("Total time required for queued jobs: " + totalTimeOfQueuedJobs);
+//     let numOfWorkerInstances = await awsHelpers.countWorkerEc2Instances();
+//     numOfWorkerInstances += 1;
+//     if(totalTimeOfQueuedJobs / numOfWorkerInstances > MAX_THRESHOLD_FOR_WAITING_TIME) {
+//         // spawn another worker
+//         await awsHelpers.spawnEc2Instance();
+//     }
+//     else if(totalTimeOfQueuedJobs === 0){
+//         await awsHelpers.killEc2Instance();
+//     }
+// });
 
-// Setting server
-const PORT = process.env.PORT || 8082;
+// Setting up server
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, (req, res) => {
     console.log("Server is online on " + PORT);
 });

@@ -1,0 +1,1 @@
+module.MIN_ING_QUANTITY_THRESHOLD = 5;

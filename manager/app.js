@@ -17,7 +17,8 @@ app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 
 makeStockOrderBasedOnLastHourUsage = async() => {
-    // Function to calculate last hour usage of ingredients
+    // this function will be called every hour via cron job to update stock
+    // Function to make extra stick order based on last hour usage of ingredients
     const lastHourUsage = {
         'Tomato': 0,
         'Onions': 0,
@@ -26,9 +27,15 @@ makeStockOrderBasedOnLastHourUsage = async() => {
         "BBQ Chicken": 0,
         'Dough': 0
     };
+
     const now = new Date();
-    const prevHour = now.getHours() -1;
-    console.log(prevHour, now);
+    const prevHour = now.getHours() - 1;
+
+    if (prevHour < 0) {
+        return; 
+    }
+
+    //creating orders for stock = 20% of prev hour usage
     for (const ingredient of Object.keys(lastHourUsage)) {
         const ingredientDemand = await databaseHelper.readIngredient(ingredient);
         lastHourUsage[ingredient] = 0.2 * (ingredientDemand.hourlyUsage ? ingredientDemand.hourlyUsage[prevHour] || 0 : 0);
@@ -36,20 +43,14 @@ makeStockOrderBasedOnLastHourUsage = async() => {
 
     let workOrders = [];
 
-    // Calculate last hour usage of ingredients
+    // creating order for stock 
     for (let ingredient in lastHourUsage) {
         let wo = await inventoryHelpers.createWorkOrder(ingredient, lastHourUsage[ingredient], 4, 15, true);
         workOrders.push(wo);
     }
-    // for (let ingredient in lastHourUsage) {
-    //     if (lastHourUsage.hasOwnProperty(ingredient)) {
-    //         await addIngredient(ingredient, lastHourUsage[ingredient]);
-    //     }
-    //   }
     await workQueueHelpers.produceTasks(workOrders)
+
 }
-
-
 
 const produceTasks = async(orders) => {
     amqp.connect('amqp://localhost', function(error0, connection) {
@@ -60,7 +61,6 @@ const produceTasks = async(orders) => {
             if (error1) {
                 throw error1;
             }
-        
         }
         )
     }
@@ -68,9 +68,7 @@ const produceTasks = async(orders) => {
 }
 // Database connection at server start
 connectDB();
-makeStockOrderBasedOnLastHourUsage();
 workQueueHelpers.createWorkQueueConnection();
-// ROUTES
 
 app.get("/ping", (req, res) => {
     res.send("OK")

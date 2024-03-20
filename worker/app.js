@@ -87,23 +87,13 @@ const connectToRabbitMQ = async () => {
 								await addIngredient(workOrder.name, workOrder.quantity);
 							}
 							await workOrder.save();
-							console.log(' [x] Done');
+							console.log('[dlx] Done', task.name);
 							channel.ack(msg);
 						}, task.timeRequired * 1000);
 					} else {
 						console.log('Discarding stale work order');
 						channel.ack(msg);
 					}
-
-					setTimeout(async () => {
-						workOrder.status = 'COMPLETED';
-						if (workOrder.stockFlag) {
-							await addIngredient(workOrder.name, workOrder.quantity);
-						}
-						await workOrder.save();
-						console.log('[dlx] Done', task.name);
-						channel.ack(msg);
-					}, task.timeRequired * 1000);
 				} else {
 					console.log(' [x] Max retries reached for task:', task.name);
 					channel.reject(msg, false); // false to discard

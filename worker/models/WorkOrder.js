@@ -22,6 +22,10 @@ const workOrderSchema = new mongoose.Schema({
         type: String,
         enum: ['CREATED', 'QUEUED', 'EXECUTING', 'COMPLETED'],
         required: true
+    },
+    stockFlag:{
+        type: Boolean,
+        default:false
     }
 });
 

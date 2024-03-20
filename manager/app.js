@@ -1,25 +1,22 @@
 const express = require("express");
 const connectDB = require("./connect-db");
 const workQueueHelpers = require("./workqueue");
-const inventoryHelpers = require("./inventory");
 const WorkOrder = require("./models/WorkOrder");
+const inventoryHelpers = require("./inventory");
 const app = express();
 const cron = require("node-cron");
 const awsHelpers = require("./aws");
 const databaseHelper = require("./modify_database");
-const RABBITMQ_INSTANCE_NAME = "RabbitMQ";
 
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({extended:true}));
 
+const INITIAL_STOCK_QUANTITY = 100;
+
 // Database connection at server start
 connectDB();
-
-// Establish connection to RabbitMQ broker.
 workQueueHelpers.createWorkQueueConnection();
-
-// ROUTES
 
 app.get("/ping", (req, res) => {
     res.send("OK")
@@ -37,15 +34,15 @@ app.post("/order", async (req, res) => {
             result: "Failed, not enough stock;"
         });
     }
+    
     // Create a new work order for this pizza and persist to DB
     let orders = [];
     for(let i = 0; i < quantity; i++){
         let order = await inventoryHelpers.createWorkOrder(pizza_name, 1, 2, 100);
         orders.push(order);
     }
-
     // Dispatch order for making the pizza
-    await workQueueHelpers.produceTasks([pizzaOrder]);
+    await workQueueHelpers.produceTasks(orders);
     res.status(201).json({
         result: "Order success"
     });
@@ -53,13 +50,13 @@ app.post("/order", async (req, res) => {
 
 app.get("/load", async(req, res) => {
     await inventoryHelpers.deleteExistingWorkOrders();
-    let orders = await inventoryHelpers.seedDB();
     await inventoryHelpers.deleteExistingIngredients();
 	// empty lock collection
 	await databaseHelper.emptyLockCollection();
 
     let ingredients = await inventoryHelpers.saveIngredients();
-    await workQueueHelpers.produceTasks(orders);
+    let tasksList = await inventoryHelpers.createWorkOrdersForIngredientStockUp(ingredients, INITIAL_STOCK_QUANTITY);
+    await workQueueHelpers.produceTasks(tasksList);
     res.send("OK")
 });
 
@@ -85,6 +82,45 @@ cron.schedule('*/1 * * * *', async() => {
     else if(totalTimeOfQueuedJobs === 0){
         await awsHelpers.killEc2Instance();
     }
+});
+
+cron.schedule('0 * * * *', async() => {
+    console.log("Executing cron job to stock up most used ingredients in last hour...");
+    // this function will be called every hour via cron job to update stock
+    // Function to make extra stick order based on last hour usage of ingredients
+    const lastHourUsage = {
+        'Tomato': 0,
+        'Onions': 0,
+        'Sauce': 0,
+        'Cheese': 0,
+        "BBQ Chicken": 0,
+        'Dough': 0
+    };
+
+    const now = new Date();
+    const prevHour = now.getHours() - 1;
+
+    if (prevHour < 0) {
+        console.log("Aborting stock up, no historical data.");
+        return;
+    }
+    console.log(`Checking usage of ingredients in {prevHour}th hour`);
+
+    //creating orders for stock = 20% of prev hour usage
+    for (const ingredient of Object.keys(lastHourUsage)) {
+        const ingredientDemand = await databaseHelper.readIngredient(ingredient);
+        lastHourUsage[ingredient] = parseInt(0.2 * (ingredientDemand.hourlyUsage ? ingredientDemand.hourlyUsage[prevHour] || 0 : 0));
+        console.log(`Stocking up {} {}s`, ingredient,lastHourUsage[ingredient]);
+    }
+
+    let workOrders = [];
+
+    // creating order for stock
+    for (let ingredient in lastHourUsage) {
+        let wo = await inventoryHelpers.createWorkOrder(ingredient, lastHourUsage[ingredient], 4, 5, true);
+        workOrders.push(wo);
+    }
+    await workQueueHelpers.produceTasks(workOrders)
 });
 
 // Setting up server

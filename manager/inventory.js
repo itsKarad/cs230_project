@@ -32,21 +32,24 @@ exports.checkIfPizzaCanBeMade = async (pizza_name, quantity) => {
         if (!(await checkIfPresentInInventory(pizzaIngredients[i], quantity))) {
             // reduce qty => ADD row LOCK for each ingredient.
             return false;
-        } else {
-            await removeIngredient(pizzaIngredients[i], quantity);
         }
+    }
+    // Order will be valid.
+    for(let i in pizzaIngredients){
+        await removeIngredient(pizzaIngredients[i], quantity);
     }
     return true;
 }
 
-const createWorkOrder = async(name, qty, priority, timeReqd) => {
+exports.createWorkOrder = async(name, qty, priority, timeReqd, stockFlag  = false) => {
     // Create an instance of the MyObject model
     const order = new WorkOrder({
         name: name,
         quantity: qty,
         priority: priority,
         timeRequired: timeReqd,
-        status: "CREATED"
+        status: "CREATED",
+        stockFlag: stockFlag
     });
 
     // // Save the object to the database
@@ -55,14 +58,12 @@ const createWorkOrder = async(name, qty, priority, timeReqd) => {
     return order;
 }
 
-exports.seedDB = async() => {
+exports.createWorkOrdersForIngredientStockUp = async(ingredients, quantity) => {
     console.log("Saving initial orders to DB");
     let orders = [];
-    orders.push(await createWorkOrder("Prepare Sauce", 5, 3, 5));
-    orders.push(await createWorkOrder("Prepare Toppings", 5, 3, 5));
-    orders.push(await createWorkOrder("Bake Pizza", 5, 3, 5));
-    orders.push(await createWorkOrder("Pack Pizza for delivery", 5, 3, 5));
-    orders.push(await createWorkOrder("Cut veggies for toppings", 5, 3, 5));
+    for(let i=0; i<ingredients.length; i++){
+        orders.push(await this.createWorkOrder(ingredients[i].name, quantity, 3, 5, true));
+    }
     return orders;
 }
 
@@ -91,13 +92,11 @@ exports.deleteExistingWorkOrders = async() => {
 exports.saveIngredients = async() => {
     console.log("Saving initial ingredients to DB");
     let ingredients = [];
-    ingredients.push(await createIngredient("Tomato", 100));
-    ingredients.push(await createIngredient("Onions", 100));
-    ingredients.push(await createIngredient("Sauce", 100));
-    ingredients.push(await createIngredient("Cheese", 100));
-    ingredients.push(await createIngredient("BBQ Chicken", 100));
-    ingredients.push(await createIngredient("Dough", 100));
+    ingredients.push(await createIngredient("Tomato", 0));
+    ingredients.push(await createIngredient("Onions", 0));
+    ingredients.push(await createIngredient("Sauce", 0));
+    ingredients.push(await createIngredient("Cheese", 0));
+    ingredients.push(await createIngredient("BBQ Chicken", 0));
+    ingredients.push(await createIngredient("Dough", 0));
     return ingredients;
 }
-
-module.exports = {createWorkOrder};

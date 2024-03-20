@@ -7,9 +7,8 @@ db = mongoose.connection;
 
 const removeIngredient = async (ingredientName, quantity) => {
     const ingredient = await readIngredient(ingredientName);
-    const taskId = ingredient._id;
     try {
-        if (await acquireLock(taskId)) {
+        if (await acquireLock(ingredient.name)) {
             ingredient.quantity -= quantity;
             const now = new Date();
             const currentHour = now.getHours();
@@ -17,32 +16,14 @@ const removeIngredient = async (ingredientName, quantity) => {
             await ingredient.save();
             console.log("Removed ingredient", ingredientName);
             console.log(`${ingredientName} quantity is now ${ingredient.quantity}`);
-            await releaseLock(taskId);
+            await releaseLock(ingredient.name);
 
         } else {
             console.log("Failed to acquire lock");
         }
     } catch (e) {
         console.log(e);
-        await releaseLock(taskId);
-    }
-};
-
-const addIngredient = async (ingredientName) => {
-    const ingredient = await readIngredient(ingredientName);
-    const taskId = ingredient._id;
-    try {
-        if (await acquireLock(taskId)) {
-            ingredient.quantity += 1;
-            await ingredient.save();
-            console.log("Added ingredient", ingredientName);
-            await releaseLock(taskId);
-        } else {
-            console.log("Failed to acquire lock");
-        }
-    } catch (e) {
-        console.log(e);
-        await releaseLock(taskId);
+        await releaseLock(ingredient.name);
     }
 };
 
@@ -106,7 +87,6 @@ releaseLock = async (taskId) => {
 
 module.exports = {
     removeIngredient,
-    addIngredient,
     readIngredient,
     emptyLockCollection,
 };

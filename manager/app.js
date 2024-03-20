@@ -14,42 +14,6 @@ app.use(express.urlencoded({extended:true}));
 
 const INITIAL_STOCK_QUANTITY = 100;
 
-makeStockOrderBasedOnLastHourUsage = async() => {
-    // this function will be called every hour via cron job to update stock
-    // Function to make extra stick order based on last hour usage of ingredients
-    const lastHourUsage = {
-        'Tomato': 0,
-        'Onions': 0,
-        'Sauce': 0,
-        'Cheese': 0,
-        "BBQ Chicken": 0,
-        'Dough': 0
-    };
-
-    const now = new Date();
-    const prevHour = now.getHours() - 1;
-
-    if (prevHour < 0) {
-        return; 
-    }
-
-    //creating orders for stock = 20% of prev hour usage
-    for (const ingredient of Object.keys(lastHourUsage)) {
-        const ingredientDemand = await databaseHelper.readIngredient(ingredient);
-        lastHourUsage[ingredient] = 0.2 * (ingredientDemand.hourlyUsage ? ingredientDemand.hourlyUsage[prevHour] || 0 : 0);
-    }   
-
-    let workOrders = [];
-
-    // creating order for stock 
-    for (let ingredient in lastHourUsage) {
-        let wo = await inventoryHelpers.createWorkOrder(ingredient, lastHourUsage[ingredient], 4, 15, true);
-        workOrders.push(wo);
-    }
-    await workQueueHelpers.produceTasks(workOrders)
-
-}
-
 // Database connection at server start
 connectDB();
 workQueueHelpers.createWorkQueueConnection();
@@ -118,6 +82,45 @@ cron.schedule('*/1 * * * *', async() => {
     else if(totalTimeOfQueuedJobs === 0){
         await awsHelpers.killEc2Instance();
     }
+});
+
+cron.schedule('*/1 * * * *', async() => {
+    console.log("Executing cron job to stock up most used ingredients in last hour...");
+    // this function will be called every hour via cron job to update stock
+    // Function to make extra stick order based on last hour usage of ingredients
+    const lastHourUsage = {
+        'Tomato': 0,
+        'Onions': 0,
+        'Sauce': 0,
+        'Cheese': 0,
+        "BBQ Chicken": 0,
+        'Dough': 0
+    };
+
+    const now = new Date();
+    const prevHour = now.getHours() - 1;
+
+    if (prevHour < 0) {
+        console.log("Aborting stock up, no historical data.");
+        return;
+    }
+    console.log(`Checking usage of ingredients in {prevHour}th hour`);
+
+    //creating orders for stock = 20% of prev hour usage
+    for (const ingredient of Object.keys(lastHourUsage)) {
+        const ingredientDemand = await databaseHelper.readIngredient(ingredient);
+        lastHourUsage[ingredient] = parseInt(0.2 * (ingredientDemand.hourlyUsage ? ingredientDemand.hourlyUsage[prevHour] || 0 : 0));
+        console.log(`Stocking up {} {}s`, ingredient,lastHourUsage[ingredient]);
+    }
+
+    let workOrders = [];
+
+    // creating order for stock
+    for (let ingredient in lastHourUsage) {
+        let wo = await inventoryHelpers.createWorkOrder(ingredient, lastHourUsage[ingredient], 4, 5, true);
+        workOrders.push(wo);
+    }
+    await workQueueHelpers.produceTasks(workOrders)
 });
 
 // Setting up server

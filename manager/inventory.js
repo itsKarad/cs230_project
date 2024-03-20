@@ -32,9 +32,11 @@ exports.checkIfPizzaCanBeMade = async (pizza_name, quantity) => {
         if (!(await checkIfPresentInInventory(pizzaIngredients[i], quantity))) {
             // reduce qty => ADD row LOCK for each ingredient.
             return false;
-        } else {
-            await removeIngredient(pizzaIngredients[i], quantity);
         }
+    }
+    // Order will be valid.
+    for(let i in pizzaIngredients){
+        await removeIngredient(pizzaIngredients[i], quantity);
     }
     return true;
 }

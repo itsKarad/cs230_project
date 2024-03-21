@@ -103,12 +103,14 @@ cron.schedule('*/1 * * * *', async() => {
     const pstDate = now.toLocaleString('en-US', options);
     const prevHour = pstDate.getHours() - 1;
 
+    console.log("Time now: " + pstDate);
+    console.log("Checking usage of ingredients in " + prevHour + "th hour");
+
     if (prevHour < 0) {
         console.log("Aborting stock up, no historical data.");
         return;
     }
-    console.log("Time now: " + pstDate);
-    console.log("Checking usage of ingredients in " + prevHour + "th hour");
+
 
     //creating orders for stock = 20% of prev hour usage
     for (const ingredient of Object.keys(lastHourUsage)) {

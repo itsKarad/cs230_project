@@ -90,7 +90,7 @@ docker run -d -p 8080:8080 akarad158/cs230_worker:prod
 
 1. Navigate to your AWS EC2 Worker Instance.
 2. Click on Actions and under "Images and Templates", click "Create Image".
-3. This will take you to the AMI creation page. Give this image the name "base-image".
+3. This will take you to the AMI creation page. Give this image the name "base-image". Note that the name must be "base-image", since it's hardcoded by name in the codebase to avoid hardcoding by IDs.
 4. Click create image. This usually takes ~5 minutes to create a new AMI. All spawned workers will be launched from this base image.
 
 ## Security Group Configuration

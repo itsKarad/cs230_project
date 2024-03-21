@@ -84,7 +84,7 @@ cron.schedule('*/1 * * * *', async() => {
     }
 });
 
-cron.schedule('*/1 * * * *', async() => {
+cron.schedule('0 * * * *', async() => {
     console.log("Executing cron job to stock up most used ingredients in last hour...");
     // this function will be called every hour via cron job to update stock
     // Function to make extra stick order based on last hour usage of ingredients
@@ -98,12 +98,9 @@ cron.schedule('*/1 * * * *', async() => {
     };
 
     const now = new Date();
-    // Convert to PST (Pacific Standard Time)
-    const options = {timeZone: 'America/Los_Angeles', timeZoneName: 'short'};
-    const pstDate = now.toLocaleString('en-US', options);
-    const prevHour = pstDate.getHours() - 1;
+    const prevHour = now.getHours() - 1;
 
-    console.log("Time now: " + pstDate);
+    console.log("Time now: " + now);
     console.log("Checking usage of ingredients in " + prevHour + "th hour");
 
     if (prevHour < 0) {

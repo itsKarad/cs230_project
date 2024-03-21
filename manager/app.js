@@ -104,19 +104,22 @@ cron.schedule('0 * * * *', async() => {
         console.log("Aborting stock up, no historical data.");
         return;
     }
-    console.log(`Checking usage of ingredients in {prevHour}th hour`);
+    console.log("Time now: " + now);
+    console.log("Checking usage of ingredients in " + prevHour + "th hour");
 
     //creating orders for stock = 20% of prev hour usage
     for (const ingredient of Object.keys(lastHourUsage)) {
         const ingredientDemand = await databaseHelper.readIngredient(ingredient);
         lastHourUsage[ingredient] = parseInt(0.2 * (ingredientDemand.hourlyUsage ? ingredientDemand.hourlyUsage[prevHour] || 0 : 0));
-        console.log(`Stocking up {} {}s`, ingredient,lastHourUsage[ingredient]);
+        console.log("Stocking up " + ingredient + " with quantity " + lastHourUsage[ingredient]);
     }
 
     let workOrders = [];
 
     // creating order for stock
     for (let ingredient in lastHourUsage) {
+        if(lastHourUsage[ingredient] === 0)
+            continue;
         let wo = await inventoryHelpers.createWorkOrder(ingredient, lastHourUsage[ingredient], 4, 5, true);
         workOrders.push(wo);
     }

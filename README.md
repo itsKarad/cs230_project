@@ -40,6 +40,63 @@ Note that the rabbitMQ endpoint for the other EC2 instances will be `<RABBITMQ_I
 
 ![Rabbit MQ Security Groups](./assets/RabbitMQSG.png)
 
+# Worker Instance Setup
+
+Connect to the EC2 instance through SSH or EC2 instance connect.
+
+Run the following commands to clone the codebase from Github on the ubuntu instance:
+
+```
+sudo apt update
+sudo apt install [docker.io](http://docker.io/)
+sudo systemctl start docker
+sudo groupadd docker
+sudo usermod -aG docker ubuntu
+sudo chmod 666 /var/run/docker.sock
+sudo systemctl enable docker
+
+git clone https://github.com/itsKarad/cs230_project
+cd cs230_project/worker
+
+
+```
+
+In `worker/aws.js` file, replace `<YOUR_AWS_ACCESS_KEY>` by your AWS account access key and `<YOUR_AWS_SECRET_KEY>` by your AWS account secret key.
+
+In cs230_project/worker, build a docker image by running
+```
+docker build .
+```
+
+Run this command to see the IMAGE_ID of the newly created container.
+
+```
+docker images
+```
+
+Use this IMAGE_ID to create a tag for this image:
+
+```
+docker tag akarad158/cs230_worker:prod <IMAGE_ID>
+```
+
+Use this tag to start a container by running this command:
+
+```
+docker run -d -p 8080:8080 akarad158/cs230_worker:prod
+```
+
+## Base Image Setup
+
+1. Navigate to your AWS EC2 Worker Instance.
+2. Click on Actions and under "Images and Templates", click "Create Image".
+3. This will take you to the AMI creation page. Give this image the name "base-image".
+4. Click create image. This usually takes ~5 minutes to create a new AMI. All spawned workers will be launched from this base image.
+
+## Security Group Configuration
+
+![Worker Security Groups](./assets/WorkerSG.png)
+
 # Manager Instance Setup
 
 Connect to the EC2 instance through SSH or EC2 instance connect.
@@ -57,8 +114,14 @@ sudo systemctl enable docker
 
 git clone https://github.com/itsKarad/cs230_project
 cd cs230_project/manager
-docker build .
 
+
+```
+In `manager/aws.js` file, replace `<YOUR_AWS_ACCESS_KEY>` by your AWS account access key and `<YOUR_AWS_SECRET_KEY>` by your AWS account secret key.
+
+In cs230_project/manager folder, build the docker image.
+```
+docker build .
 ```
 
 Run this command to see the IMAGE_ID of the newly created container.
@@ -83,48 +146,6 @@ docker run -p 8080:8080 -d akarad158/cs230_manager:prod
 ## Security Group Configuration
 
 ![Manager Security Groups](./assets/ManagerSG.png)
-# Worker Instance Setup
-
-Connect to the EC2 instance through SSH or EC2 instance connect.
-
-Run the following commands to clone the codebase from Github on the ubuntu instance:
-
-```
-sudo apt update
-sudo apt install [docker.io](http://docker.io/)
-sudo systemctl start docker
-sudo groupadd docker
-sudo usermod -aG docker ubuntu
-sudo chmod 666 /var/run/docker.sock
-sudo systemctl enable docker
-
-git clone https://github.com/itsKarad/cs230_project
-cd cs230_project/worker
-docker build .
-
-```
-
-Run this command to see the IMAGE_ID of the newly created container.
-
-```
-docker images
-```
-
-Use this IMAGE_ID to create a tag for this image:
-
-```
-docker tag akarad158/cs230_worker:prod <IMAGE_ID>
-```
-
-Use this tag to start a container by running this command:
-
-```
-docker run -d -p 8080:8080 akarad158/cs230_worker:prod
-```
-
-## Security Group Configuration
-
-![Worker Security Groups](./assets/WorkerSG.png)
 
 # Interacting with this project
 

@@ -84,7 +84,7 @@ cron.schedule('*/1 * * * *', async() => {
     }
 });
 
-cron.schedule('0 * * * *', async() => {
+cron.schedule('*/1 * * * *', async() => {
     console.log("Executing cron job to stock up most used ingredients in last hour...");
     // this function will be called every hour via cron job to update stock
     // Function to make extra stick order based on last hour usage of ingredients

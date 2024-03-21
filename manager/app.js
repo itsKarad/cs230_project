@@ -98,13 +98,16 @@ cron.schedule('*/1 * * * *', async() => {
     };
 
     const now = new Date();
-    const prevHour = now.getHours() - 1;
+    // Convert to PST (Pacific Standard Time)
+    const options = {timeZone: 'America/Los_Angeles', timeZoneName: 'short'};
+    const pstDate = now.toLocaleString('en-US', options);
+    const prevHour = pstDate.getHours() - 1;
 
     if (prevHour < 0) {
         console.log("Aborting stock up, no historical data.");
         return;
     }
-    console.log("Time now: " + now);
+    console.log("Time now: " + pstDate);
     console.log("Checking usage of ingredients in " + prevHour + "th hour");
 
     //creating orders for stock = 20% of prev hour usage

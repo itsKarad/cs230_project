@@ -59,7 +59,6 @@ git clone https://github.com/itsKarad/cs230_project
 cd cs230_project/manager
 docker build .
 
-docker run -p 8080:8080 -d akarad158/cs230_manager:prod
 ```
 
 Run this command to see the IMAGE_ID of the newly created container.
@@ -68,10 +67,17 @@ Run this command to see the IMAGE_ID of the newly created container.
 docker images
 ```
 
-Use this ID to start a container by running this command:
+Add the following tag to the newly created image.
+
 
 ```
-docker run -d -p 8080:8080 IMAGE_ID
+docker tag <IMAGE_ID> akarad158/cs230_manager:prod
+```
+
+Use this tag to start a container by running this command:
+
+```
+docker run -p 8080:8080 -d akarad158/cs230_manager:prod
 ```
 
 ## Security Group Configuration

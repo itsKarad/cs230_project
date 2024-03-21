@@ -3,8 +3,8 @@ const fs = require('fs');
 
 // AWS config
 AWS.config.update({
-    accessKeyId: 'AKIAXXPXUJR5BB7KXYWQ',
-    secretAccessKey: 'N5RaEEduQVVtsaMedB11ewSLDhps6e6FeSa11ob9',
+    accessKeyId: '<YOUR_AWS_ACCESS_KEY>',
+    secretAccessKey: '<YOUR_AWS_SECRET_KEY>',
     region: 'us-east-2'
 });
 

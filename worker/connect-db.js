@@ -6,7 +6,7 @@ const bodyParser = require("body-parser");
 dotenv.config({ path: "./config.env" });
 
 // Establishing connection to MongoDB database
-const uri = "mongodb+srv://cs230:PHfIS47vx8uTrINM@cluster0.vhylelw.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
+const uri = "<YOUR_MONGODB_URI>";
 const connectDB = async () => {
     mongoose.connect(uri, {useNewUrlParser: true,useUnifiedTopology: true})
     .then(()=>{

@@ -1,5 +1,8 @@
 # AWS setup
 
+![Architecture](./assets/arch.png)
+
+
 Start 3 Ubuntu EC2 instances, named:
 
 1. RabbitMQ
